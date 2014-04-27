@@ -1,0 +1,30 @@
+<!DOCTYPE hibernate-configuration PUBLIC "-//Hibernate/Hibernate Configuration DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+	<session-factory>
+		<!-- <property name="hibernate.dialect">nz.ac.squash.db.SQLiteDialect</property> 
+			<property name="hibernate.connection.driver_class">org.sqlite.JDBC</property> 
+			<property name="hibernate.connection.url">jdbc:sqlite:./db/client_db.sqlite</property> -->
+
+		<!-- <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property> 
+			<property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property> 
+			<property name="hibernate.connection.url">jdbc:mysql://localhost:3306/ausc</property> 
+			<property name="connection.username">root</property> -->
+
+		<property name="hibernate.connection.driver_class">org.mariadb.jdbc.Driver</property>
+		<property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+		<property name="hibernate.connection.url">jdbc:mysql://localhost/ausc</property>
+		<property name="connection.username">root</property>
+
+		<property name="hibernate.hbm2ddl.auto">update</property>
+
+		<!-- <property name="hibernate.show_sql">true</property> <property name="hibernate.format_sql">true</property> -->
+
+		<mapping class="nz.ac.squash.db.beans.Member" />
+		<mapping class="nz.ac.squash.db.beans.MemberStatus" />
+		<mapping class="nz.ac.squash.db.beans.Match" />
+		<mapping class="nz.ac.squash.db.beans.MatchHint" />
+		<mapping class="nz.ac.squash.db.beans.MatchHintRequest" />
+		<mapping class="nz.ac.squash.db.beans.LadderResult" />
+	</session-factory>
+</hibernate-configuration>
