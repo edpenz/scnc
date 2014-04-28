@@ -1,6 +1,7 @@
 package nz.ac.squash.windows;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -10,6 +11,8 @@ import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -17,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -44,10 +48,22 @@ import org.apache.commons.lang3.StringUtils;
 public class ChallengeWindow extends JDialog {
 	private static final long serialVersionUID = 1L;
 
-	public static ChallengeWindow showDialog(Window parent) {
-		ChallengeWindow window = new ChallengeWindow(parent);
-		window.setVisible(true);
+	public static ChallengeWindow showDialog(Component parent) {
+		final JFrame frame = parent instanceof JFrame ? (JFrame) parent
+				: (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class,
+						parent);
 
+		ChallengeWindow window = new ChallengeWindow(frame.getOwner());
+
+		frame.getGlassPane().setVisible(true);
+		window.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosed(WindowEvent e) {
+				frame.getGlassPane().setVisible(false);
+			}
+		});
+
+		window.setVisible(true);
 		return window;
 	}
 
@@ -314,19 +330,21 @@ public class ChallengeWindow extends JDialog {
 			public void run() {
 				MemberStatus latestStatus = new MemberStatus(member);
 
-				final List<Member> players = typedQuery(
-						Member.class,
-						"select s.mMember, max(s.mDate), s.mSkillLevel, s.mPresent from "
+				final List<MemberStatus> players = typedQuery(
+						MemberStatus.class,
+						"select s from "
 								+ MemberStatus.class.getName()
-								+ " s where s.mDate >= ?0 and s.mMember != ?1  group by s.mMember having s.mSkillLevel = ?2 and s.mPresent = true",
+								+ " as s where s.mDate >= ?0 and s.mMember != ?1 and s.mSkillLevel = ?2 and s.mPresent = true and s.mDate = (select max(mDate) from "
+								+ MemberStatus.class.getName()
+								+ " as m where s.mMember = m.mMember)",
 						Utility.stripTime(new Date()), member,
 						latestStatus.getSkillLevel());
 
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
-						for (Member member : players) {
-							newList.addElement(member);
+						for (MemberStatus status : players) {
+							newList.addElement(status.getMember());
 						}
 					}
 				});

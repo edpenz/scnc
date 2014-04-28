@@ -51,6 +51,10 @@ public class Match {
 		mPlayer1 = player1;
 		mPlayer2 = player2;
 	}
+	
+	public long getID(){
+		return mID;
+	}
 
 	public Date getDate() {
 		return mDate;

@@ -1,4 +1,4 @@
-package panels;
+package nz.ac.squash.panels;
 
 import java.awt.Color;
 import java.awt.Font;

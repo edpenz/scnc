@@ -25,6 +25,6 @@
 		<mapping class="nz.ac.squash.db.beans.Match" />
 		<mapping class="nz.ac.squash.db.beans.MatchHint" />
 		<mapping class="nz.ac.squash.db.beans.MatchHintRequest" />
-		<mapping class="nz.ac.squash.db.beans.LadderResult" />
+		<mapping class="nz.ac.squash.db.beans.MatchResult" />
 	</session-factory>
 </hibernate-configuration>

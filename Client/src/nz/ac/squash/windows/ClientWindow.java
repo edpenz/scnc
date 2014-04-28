@@ -11,8 +11,6 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.Date;
 
@@ -23,6 +21,8 @@ import javax.swing.JPanel;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import nz.ac.squash.panels.CheckInPanel;
+import nz.ac.squash.panels.SchedulePanel;
 import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JBrandedPanel;
@@ -36,9 +36,6 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-
-import panels.CheckInPanel;
-import panels.SchedulePanel;
 
 public class ClientWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -81,8 +78,9 @@ public class ClientWindow extends JFrame {
 	private CheckInPanel mCheckinPanel;
 
 	private ClientWindow() {
-		// setSize(Toolkit.getDefaultToolkit().getScreenSize());
 		createContents();
+
+		//setSize(Toolkit.getDefaultToolkit().getScreenSize());
 	}
 
 	private void createContents() {
@@ -156,11 +154,12 @@ public class ClientWindow extends JFrame {
 		checkinButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				showPanel(CheckInPanel.class);
+				mCheckinPanel.refreshLadder();
 			}
 		});
 		panel_5.setLayout(new GridLayout(1, 0, 10, 0));
 
-		JButton scheduleButton = new JButton("Schedule");
+		JButton scheduleButton = new JButton("Match Schedule");
 		scheduleButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				showPanel(SchedulePanel.class);
@@ -169,7 +168,7 @@ public class ClientWindow extends JFrame {
 		scheduleButton.setOpaque(false);
 		panel_5.add(scheduleButton);
 		panel_5.add(checkinButton);
-		JButton challengeButton = new JButton("Custom match");
+		JButton challengeButton = new JButton("Challange a Player");
 		challengeButton.setOpaque(false);
 		challengeButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -234,15 +233,6 @@ public class ClientWindow extends JFrame {
 	}
 
 	private void showChallengeDialog() {
-		getGlassPane().setVisible(true);
-
-		ChallengeWindow dialog = ChallengeWindow.showDialog(getOwner());
-
-		dialog.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosed(WindowEvent e) {
-				getGlassPane().setVisible(false);
-			}
-		});
+		ChallengeWindow.showDialog(this);
 	}
 }

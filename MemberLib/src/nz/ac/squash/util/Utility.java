@@ -14,7 +14,7 @@ public class Utility {
 
 	public static final DateFormat SPREADSHEET_FORMATTER = new SimpleDateFormat(
 			"dd/MM/yyyy HH:mm:ss");
-	
+
 	public static <T> T defaultIfNull(T object, T def) {
 		return object != null ? object : def;
 	}
@@ -70,10 +70,14 @@ public class Utility {
 	}
 
 	public static int deltaSkill(String a, String b) {
+		return Math.abs(compareSkill(a, b));
+	}
+
+	public static int compareSkill(String a, String b) {
 		int aSkill = Integer.parseInt(a);
 		int bSkill = Integer.parseInt(b);
 
-		return Math.abs(aSkill - bSkill);
+		return aSkill - bSkill;
 	}
 
 	public static void trySleep(long millis) {

@@ -1,7 +1,8 @@
-package panels;
+package nz.ac.squash.panels;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -9,6 +10,13 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import javax.swing.ButtonGroup;
@@ -16,7 +24,6 @@ import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.ListModel;
@@ -28,15 +35,17 @@ import javax.swing.event.ListSelectionListener;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
+import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JTextFieldPlus;
+import nz.ac.squash.widget.LadderEntry;
 import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
-import java.awt.Dimension;
 
 public class CheckInPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -51,6 +60,10 @@ public class CheckInPanel extends JPanel {
 	private JRadioButton mLevel3Radio;
 	private JRadioButton mLevel4Radio;
 	private ButtonGroup mSkillRadioGroup;
+	private JPanel panel;
+	private JLabel label;
+	private JLabel lblLadder;
+	private JPanel mLadderGrid;
 
 	private static final ListModel<Member> EMPTY_RESULTS = new DefaultListModel<Member>();
 
@@ -64,56 +77,65 @@ public class CheckInPanel extends JPanel {
 
 	private Member mSelectedMember = null;
 	private JButton btnManuallyPickYour;
-	private JPanel panel;
-	private JPanel panel_2;
-	private JPanel panel_3;
-	private JPanel panel_4;
-	private JPanel panel_5;
-	private JPanel panel_6;
+
+	private final List<LadderEntry> mLadderEntries = new ArrayList<LadderEntry>();
+	private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
 
 	public CheckInPanel() {
 		createContents();
+
+		refreshLadder();
 	}
 
 	private void createContents() {
 		setOpaque(false);
 		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWidths = new int[] { 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 0 };
-		gridBagLayout.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gridBagLayout.rowWeights = new double[] { 1.0 };
+		gridBagLayout.columnWidths = new int[] { 40, 0, 40, 0, 40, 0 };
+		gridBagLayout.rowHeights = new int[] { 20, 0, 0, 40 };
+		gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0,
+				Double.MIN_VALUE };
+		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 1.0, 0.0 };
 		setLayout(gridBagLayout);
+
+		label = new JLabel("Check-in to club night");
+		label.setForeground(Color.WHITE);
+		label.setFont(new Font("Tahoma", Font.PLAIN, 32));
+		GridBagConstraints gbc_label = new GridBagConstraints();
+		gbc_label.insets = new Insets(0, 20, 10, 20);
+		gbc_label.gridx = 1;
+		gbc_label.gridy = 1;
+		add(label, gbc_label);
+
+		lblLadder = new JLabel("Ladder");
+		lblLadder.setForeground(Color.WHITE);
+		lblLadder.setFont(new Font("Tahoma", Font.PLAIN, 32));
+		GridBagConstraints gbc_lblLadder = new GridBagConstraints();
+		gbc_lblLadder.insets = new Insets(0, 20, 10, 20);
+		gbc_lblLadder.gridx = 3;
+		gbc_lblLadder.gridy = 1;
+		add(lblLadder, gbc_lblLadder);
 
 		panel = new JPanel();
 		panel.setOpaque(false);
 		GridBagConstraints gbc_panel = new GridBagConstraints();
-		gbc_panel.insets = new Insets(0, 50, 0, 0);
-		gbc_panel.anchor = GridBagConstraints.WEST;
-		gbc_panel.gridx = 0;
-		gbc_panel.gridy = 0;
+		gbc_panel.fill = GridBagConstraints.BOTH;
+		gbc_panel.gridx = 1;
+		gbc_panel.gridy = 2;
 		add(panel, gbc_panel);
 		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[] {0};
-		gbl_panel.rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0};
+		gbl_panel.columnWidths = new int[] { 0 };
+		gbl_panel.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
 		gbl_panel.columnWeights = new double[] { 1.0 };
-		gbl_panel.rowWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-				0.0, 0.0, 0.0 };
+		gbl_panel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+				0.0, 1.0 };
 		panel.setLayout(gbl_panel);
-
-		JLabel lblNewLabel = new JLabel("Check-in to club night");
-		GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
-		gbc_lblNewLabel.gridx = 0;
-		gbc_lblNewLabel.gridy = 0;
-		panel.add(lblNewLabel, gbc_lblNewLabel);
-		lblNewLabel.setForeground(Color.WHITE);
-		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 32));
 
 		JLabel lblSelectYour = new JLabel("1: Select your name below");
 		GridBagConstraints gbc_lblSelectYour = new GridBagConstraints();
 		gbc_lblSelectYour.insets = new Insets(5, 5, 5, 0);
 		gbc_lblSelectYour.anchor = GridBagConstraints.WEST;
 		gbc_lblSelectYour.gridx = 0;
-		gbc_lblSelectYour.gridy = 1;
+		gbc_lblSelectYour.gridy = 0;
 		panel.add(lblSelectYour, gbc_lblSelectYour);
 		lblSelectYour.setForeground(Color.WHITE);
 		lblSelectYour.setFont(new Font("Tahoma", Font.PLAIN, 16));
@@ -124,7 +146,7 @@ public class CheckInPanel extends JPanel {
 		gbc_mSearchField.anchor = GridBagConstraints.NORTH;
 		gbc_mSearchField.fill = GridBagConstraints.HORIZONTAL;
 		gbc_mSearchField.gridx = 0;
-		gbc_mSearchField.gridy = 2;
+		gbc_mSearchField.gridy = 1;
 		panel.add(mSearchField, gbc_mSearchField);
 		mSearchField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
@@ -175,7 +197,7 @@ public class CheckInPanel extends JPanel {
 		gbc_mStep2Label.anchor = GridBagConstraints.WEST;
 		gbc_mStep2Label.insets = new Insets(5, 5, 5, 0);
 		gbc_mStep2Label.gridx = 0;
-		gbc_mStep2Label.gridy = 5;
+		gbc_mStep2Label.gridy = 4;
 		panel.add(mStep2Label, gbc_mStep2Label);
 		mStep2Label.setForeground(Color.LIGHT_GRAY);
 		mStep2Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
@@ -185,7 +207,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_1.insets = new Insets(5, 5, 5, 5);
 		gbc_panel_1.fill = GridBagConstraints.BOTH;
 		gbc_panel_1.gridx = 0;
-		gbc_panel_1.gridy = 6;
+		gbc_panel_1.gridy = 5;
 		panel.add(panel_1, gbc_panel_1);
 		panel_1.setOpaque(false);
 		panel_1.setLayout(new GridLayout(0, 1, 0, 0));
@@ -226,7 +248,7 @@ public class CheckInPanel extends JPanel {
 		gbc_mResultsList.insets = new Insets(0, 5, 0, 5);
 		gbc_mResultsList.fill = GridBagConstraints.BOTH;
 		gbc_mResultsList.gridx = 0;
-		gbc_mResultsList.gridy = 3;
+		gbc_mResultsList.gridy = 2;
 		panel.add(mResultsList, gbc_mResultsList);
 		mResultsList.addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent event) {
@@ -242,7 +264,7 @@ public class CheckInPanel extends JPanel {
 		gbc_registerButton.insets = new Insets(5, 5, 5, 5);
 		gbc_registerButton.fill = GridBagConstraints.HORIZONTAL;
 		gbc_registerButton.gridx = 0;
-		gbc_registerButton.gridy = 4;
+		gbc_registerButton.gridy = 3;
 		panel.add(registerButton, gbc_registerButton);
 		registerButton.setOpaque(false);
 		registerButton.addActionListener(new ActionListener() {
@@ -257,24 +279,22 @@ public class CheckInPanel extends JPanel {
 		gbc_mStep3Label.anchor = GridBagConstraints.WEST;
 		gbc_mStep3Label.insets = new Insets(5, 5, 5, 0);
 		gbc_mStep3Label.gridx = 0;
-		gbc_mStep3Label.gridy = 7;
+		gbc_mStep3Label.gridy = 6;
 		panel.add(mStep3Label, gbc_mStep3Label);
 		mStep3Label.setForeground(Color.LIGHT_GRAY);
 		mStep3Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
 
 		mButtonsPanel = new JPanel();
-		mButtonsPanel.setPreferredSize(new Dimension(0, 200));
 		GridBagConstraints gbc_mButtonsPanel = new GridBagConstraints();
 		gbc_mButtonsPanel.insets = new Insets(5, 5, 5, 5);
 		gbc_mButtonsPanel.fill = GridBagConstraints.BOTH;
 		gbc_mButtonsPanel.gridx = 0;
-		gbc_mButtonsPanel.gridy = 8;
+		gbc_mButtonsPanel.gridy = 7;
 		panel.add(mButtonsPanel, gbc_mButtonsPanel);
 		mButtonsPanel.setOpaque(false);
 		mButtonsPanel.setLayout(new GridLayout(0, 1, 0, 5));
 
-		JButton btnNewButton_1 = new JButton(
-				"Get matched against similar members");
+		JButton btnNewButton_1 = new JButton("Participate in the ladder");
 		btnNewButton_1.setOpaque(false);
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -310,49 +330,72 @@ public class CheckInPanel extends JPanel {
 		gbc_panel2.fill = GridBagConstraints.BOTH;
 		gbc_panel2.gridheight = 3;
 		gbc_panel2.gridx = 0;
-		gbc_panel2.gridy = 2;
+		gbc_panel2.gridy = 1;
 		panel.add(panel2, gbc_panel2);
 		panel2.setBackground(Color.WHITE);
-		
-		panel_2 = new JPanel();
+
+		JPanel panel_2 = new JPanel();
 		panel_2.setBackground(Color.WHITE);
 		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
 		gbc_panel_2.fill = GridBagConstraints.BOTH;
 		gbc_panel_2.gridx = 0;
-		gbc_panel_2.gridy = 6;
+		gbc_panel_2.gridy = 5;
 		panel.add(panel_2, gbc_panel_2);
-		
-		panel_3 = new JPanel();
+
+		JPanel panel_3 = new JPanel();
 		panel_3.setBackground(Color.WHITE);
 		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
 		gbc_panel_3.fill = GridBagConstraints.BOTH;
 		gbc_panel_3.gridx = 0;
-		gbc_panel_3.gridy = 8;
+		gbc_panel_3.gridy = 7;
 		panel.add(panel_3, gbc_panel_3);
-		
-		panel_4 = new JPanel();
+
+		JPanel panel_4 = new JPanel();
 		panel_4.setBackground(Color.decode("#0065B3"));
 		GridBagConstraints gbc_panel_4 = new GridBagConstraints();
 		gbc_panel_4.fill = GridBagConstraints.BOTH;
 		gbc_panel_4.gridx = 0;
-		gbc_panel_4.gridy = 1;
+		gbc_panel_4.gridy = 0;
 		panel.add(panel_4, gbc_panel_4);
-		
-		panel_5 = new JPanel();
+
+		JPanel panel_5 = new JPanel();
 		panel_5.setBackground(Color.decode("#0065B3"));
 		GridBagConstraints gbc_panel_5 = new GridBagConstraints();
 		gbc_panel_5.fill = GridBagConstraints.BOTH;
 		gbc_panel_5.gridx = 0;
-		gbc_panel_5.gridy = 5;
+		gbc_panel_5.gridy = 4;
 		panel.add(panel_5, gbc_panel_5);
-		
-		panel_6 = new JPanel();
+
+		JPanel panel_6 = new JPanel();
 		panel_6.setBackground(Color.decode("#0065B3"));
 		GridBagConstraints gbc_panel_6 = new GridBagConstraints();
 		gbc_panel_6.fill = GridBagConstraints.BOTH;
 		gbc_panel_6.gridx = 0;
-		gbc_panel_6.gridy = 7;
+		gbc_panel_6.gridy = 6;
 		panel.add(panel_6, gbc_panel_6);
+
+		mLadderGrid = new JPanel();
+		mLadderGrid.setOpaque(false);
+		GridBagConstraints gbc_mLadderGrid = new GridBagConstraints();
+		gbc_mLadderGrid.insets = new Insets(5, 5, 5, 5);
+		gbc_mLadderGrid.fill = GridBagConstraints.BOTH;
+		gbc_mLadderGrid.gridx = 3;
+		gbc_mLadderGrid.gridy = 2;
+		add(mLadderGrid, gbc_mLadderGrid);
+		GridBagLayout gbl_mLadderGrid = new GridBagLayout();
+		gbl_mLadderGrid.columnWidths = new int[] { 0 };
+		gbl_mLadderGrid.rowHeights = new int[] { 0 };
+		gbl_mLadderGrid.columnWeights = new double[] { Double.MIN_VALUE };
+		gbl_mLadderGrid.rowWeights = new double[] { Double.MIN_VALUE };
+		mLadderGrid.setLayout(gbl_mLadderGrid);
+
+		JPanel panel_7 = new JPanel();
+		panel_7.setBackground(Color.decode("#0065B3"));
+		GridBagConstraints gbc_panel_7 = new GridBagConstraints();
+		gbc_panel_7.fill = GridBagConstraints.BOTH;
+		gbc_panel_7.gridx = 3;
+		gbc_panel_7.gridy = 2;
+		add(panel_7, gbc_panel_7);
 	}
 
 	private String getSkillLevel() {
@@ -450,29 +493,98 @@ public class CheckInPanel extends JPanel {
 				MemberStatus newStatus = new MemberStatus(mSelectedMember,
 						getSkillLevel(), present, playGames);
 				update(newStatus);
+
+				MatchResult.addToLadder(mSelectedMember);
 			}
 		});
 
+		// Update ladder.
+		if (mLadderMapping.containsKey(mSelectedMember)) {
+			mLadderMapping.get(mSelectedMember).setPresent(present);
+		} else {
+			refreshLadder();
+		}
+
+		// Clear check-in input widgets.
 		clearSearch();
 		disableSkill();
 		disableMode();
 
 		mSearchField.grabFocus();
-
-		JOptionPane.showMessageDialog(this, "Your status has been changed");
 	}
 
 	private void showRegistration() {
-		RegisterWindow dialog = RegisterWindow.showDialog(null,
-				new RegisterWindow.Callback() {
-					@Override
-					public void memberRegistered(Member member) {
-						CheckInPanel.this.memberRegistered(member);
-					}
-				});
+		RegisterWindow.showDialog(this, new RegisterWindow.Callback() {
+			@Override
+			public void memberRegistered(Member member) {
+				CheckInPanel.this.memberRegistered(member);
+			}
+		});
 	}
 
 	private void memberRegistered(Member member) {
 		mSearchField.setText(member.getName());
+	}
+
+	public void refreshLadder() {
+		mLadderEntries.clear();
+		mLadderGrid.removeAll();
+
+		DB.queueTransaction(new Transaction() {
+			@Override
+			public void run() {
+				final Date today = Utility.stripTime(new Date());
+
+				int i = 0;
+				for (final Member member : MatchResult.getLadder()) {
+					// Get status of member.
+					MemberStatus todaysStatus = Utility
+							.first(query(
+									MemberStatus.class,
+									"s where mDate >= ?0 and mMember = ?1 order by mDate desc",
+									today, member));
+					boolean present = todaysStatus != null
+							&& todaysStatus.isPresent();
+
+					// Create UI entry.
+					LadderEntry entry = new LadderEntry(i + 1, member, present);
+					entry.addMouseListener(new MouseAdapter() {
+						@Override
+						public void mouseReleased(MouseEvent e) {
+							mSearchField.setText(member.getNameFormatted());
+							selectMember(member);
+						}
+					});
+
+					// Add to internal lists.
+					mLadderEntries.add(entry);
+					mLadderMapping.put(member, entry);
+
+					i++;
+				}
+
+				// Add entries to UI on swing thread.
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						int i = 0;
+						for (LadderEntry entry : mLadderEntries) {
+							GridBagConstraints gbc = new GridBagConstraints();
+							gbc.gridx = i / 21;
+							gbc.gridy = i % 21;
+							gbc.fill = GridBagConstraints.BOTH;
+							gbc.weightx = 1.f;
+							gbc.weighty = 1.f;
+							gbc.insets.set(0, 5, 0, 5);
+							mLadderGrid.add(entry, gbc);
+
+							i++;
+						}
+
+						mLadderGrid.revalidate();
+					}
+				});
+			}
+		});
 	}
 }

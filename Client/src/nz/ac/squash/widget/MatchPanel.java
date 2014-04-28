@@ -11,6 +11,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Date;
@@ -27,9 +28,12 @@ import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Match;
 import nz.ac.squash.db.beans.MatchHint;
 import nz.ac.squash.db.beans.MatchHintTempVeto;
+import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.Utility;
+
+import java.awt.GridLayout;
 
 public class MatchPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -51,19 +55,12 @@ public class MatchPanel extends JPanel {
 	private int mCourt;
 	private int mSlot;
 	private Match mMatch = null;
+	private MatchResult mResult = null;
 
 	private Set<MatchHint> mTempVetoed = new HashSet<>();
 
-	private MouseListener mHoverListener = new MouseListener() {
+	private MouseListener mHoverListener = new MouseAdapter() {
 		private boolean mIsHovering = false;
-
-		@Override
-		public void mouseReleased(MouseEvent arg0) {
-		}
-
-		@Override
-		public void mousePressed(MouseEvent arg0) {
-		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
@@ -83,14 +80,14 @@ public class MatchPanel extends JPanel {
 				onHover();
 			}
 		}
-
-		@Override
-		public void mouseClicked(MouseEvent arg0) {
-		}
 	};
 	private JPanel panel_1;
 	private JLabel label;
 	private JButton mCancelButton;
+	private JPanel mReviewPanel;
+	private JButton mPlayer1WonButton;
+	private JButton mPlayer2WonButton;
+	private JButton mDrawButton;
 
 	public MatchPanel(int court, int slot) {
 		mCourt = court;
@@ -98,6 +95,9 @@ public class MatchPanel extends JPanel {
 		mPastSlot = slot < 0;
 
 		createContents();
+
+		recursivelyAddMouseListener(mSchedulePanelInner, mHoverListener);
+		recursivelyAddMouseListener(mReviewPanel, mHoverListener);
 
 		loadMatch();
 	}
@@ -256,8 +256,6 @@ public class MatchPanel extends JPanel {
 		gbc_mKickPlayer2Button.gridy = 3;
 		mSchedulePanelInner.add(mKickPlayer2Button, gbc_mKickPlayer2Button);
 
-		recursivelyAddMouseListener(mSchedulePanelInner, mHoverListener);
-
 		label = new JLabel(" ");
 		label.setOpaque(false);
 		label.setEnabled(false);
@@ -265,6 +263,38 @@ public class MatchPanel extends JPanel {
 		gbc_label.gridx = 0;
 		gbc_label.gridy = 1;
 		mSchedulePanelInner.add(label, gbc_label);
+
+		mReviewPanel = new JPanel();
+		mReviewPanel.setOpaque(false);
+		add(mReviewPanel, "review_panel");
+		mReviewPanel.setLayout(new GridLayout(0, 1, 0, 0));
+
+		mPlayer1WonButton = new JButton("Player 1 won");
+		mPlayer1WonButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				indicateWinner(mMatch.getPlayer1());
+			}
+		});
+		mPlayer1WonButton.setOpaque(false);
+		mReviewPanel.add(mPlayer1WonButton);
+
+		mPlayer2WonButton = new JButton("Player 2 won");
+		mPlayer2WonButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				indicateWinner(mMatch.getPlayer2());
+			}
+		});
+
+		mDrawButton = new JButton("Draw");
+		mDrawButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				indicateWinner(null);
+			}
+		});
+		mDrawButton.setOpaque(false);
+		mReviewPanel.add(mDrawButton);
+		mPlayer2WonButton.setOpaque(false);
+		mReviewPanel.add(mPlayer2WonButton);
 	}
 
 	private void recursivelyAddMouseListener(Container container,
@@ -279,6 +309,7 @@ public class MatchPanel extends JPanel {
 
 	public void nextSlot() {
 		mMatch = null;
+		mResult = null;
 		mSlot++;
 
 		loadMatch();
@@ -286,26 +317,28 @@ public class MatchPanel extends JPanel {
 
 	public void previousSlot() {
 		mMatch = null;
+		mResult = null;
 		mSlot--;
 
 		loadMatch();
 	}
 
 	private void loadMatch() {
-		DB.queueTransaction(new Transaction() {
+		DB.executeTransaction(new Transaction() {
 			@Override
 			public void run() {
-				Match existing = Utility
+				mMatch = Utility
 						.first(query(
 								Match.class,
 								"m where m.mCourt = ?0 and m.mTimeSlot = ?1 and m.mDate >= ?2 order by m.mDate desc",
 								mCourt, mSlot, Utility.stripTime(new Date())));
-				if (existing != null) {
-					mMatch = existing;
 
+				if (mMatch != null) {
+					mResult = Utility.first(query(MatchResult.class,
+							"r where mMatch = ?0", mMatch));
 				}
 			}
-		}).waitUntilDone();
+		});
 
 		refreshPanel();
 	}
@@ -320,15 +353,33 @@ public class MatchPanel extends JPanel {
 
 			mScheduleButton.setText("Reschedule");
 
-			mKickPlayer1Button
-					.setText("Kick " + mMatch.getPlayer1().toString());
-			mKickPlayer2Button
-					.setText("Kick " + mMatch.getPlayer2().toString());
+			mKickPlayer1Button.setText("Kick "
+					+ mMatch.getPlayer1().getNameFormatted());
+			mKickPlayer2Button.setText("Kick "
+					+ mMatch.getPlayer2().getNameFormatted());
+
+			mPlayer1WonButton.setText(mMatch.getPlayer1().getNameFormatted()
+					+ " won");
+			mPlayer2WonButton.setText(mMatch.getPlayer2().getNameFormatted()
+					+ " won");
 		} else {
 			mScheduleButton.setText("Schedule");
 
 			mKickPlayer1Button.setText("Kick player 1");
 			mKickPlayer2Button.setText("Kick player 2");
+
+			mPlayer1WonButton.setText("Player 1 won");
+			mPlayer2WonButton.setText("Player 2 won");
+		}
+
+		if (mResult != null) {
+			mPlayer1Label.setForeground(mMatch.getPlayer1().equals(
+					mResult.getWinner()) ? Color.BLACK : Color.GRAY);
+			mPlayer2Label.setForeground(mMatch.getPlayer2().equals(
+					mResult.getWinner()) ? Color.BLACK : Color.GRAY);
+		} else {
+			mPlayer1Label.setForeground(Color.BLACK);
+			mPlayer2Label.setForeground(Color.BLACK);
 		}
 
 		mScheduleButton.setEnabled(true);
@@ -337,7 +388,7 @@ public class MatchPanel extends JPanel {
 		mKickPlayer1Button.setEnabled(mMatch != null);
 		mKickPlayer2Button.setEnabled(mMatch != null);
 
-		if (!mSchedulePanel.isVisible()) {
+		if (!mSchedulePanel.isVisible() && !mReviewPanel.isVisible()) {
 			if (mMatch != null) {
 				((CardLayout) getLayout()).show(this, "game_info");
 			} else {
@@ -349,6 +400,8 @@ public class MatchPanel extends JPanel {
 	private void onHover() {
 		if (!mPastSlot) {
 			((CardLayout) getLayout()).show(this, "schedule_panel");
+		} else if (mMatch != null) {
+			((CardLayout) getLayout()).show(this, "review_panel");
 		}
 	}
 
@@ -407,9 +460,28 @@ public class MatchPanel extends JPanel {
 
 		mMatch.cancel();
 
-		// TODO Unsatisfy hints associated with this match.
-
 		mMatch = null;
+		refreshPanel();
+	}
+
+	private void indicateWinner(final Member winner) {
+		DB.executeTransaction(new Transaction() {
+			@Override
+			public void run() {
+				// Make sure result is not already set.
+				if (mResult != null) {
+					delete(mResult);
+					mResult = null;
+				}
+
+				// Persist the new result.
+				if (winner != null) {
+					mResult = new MatchResult(winner, mMatch);
+					update(mResult);
+				}
+			}
+		});
+
 		refreshPanel();
 	}
 }

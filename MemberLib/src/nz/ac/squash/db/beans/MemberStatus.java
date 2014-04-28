@@ -151,7 +151,7 @@ public class MemberStatus {
 						MemberStatus.class,
 						"select s from "
 								+ MemberStatus.class.getName()
-								+ " as s where s.mDate >= ?0 and s.mDate = (select max(mDate) from "
+								+ " as s where s.mDate >= ?0 and s.mPresent = true and s.mDate = (select max(mDate) from "
 								+ MemberStatus.class.getName()
 								+ " as m where s.mMember = m.mMember)", today));
 			}

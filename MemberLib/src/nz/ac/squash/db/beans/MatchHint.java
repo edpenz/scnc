@@ -31,7 +31,7 @@ public abstract class MatchHint {
 	@ManyToOne
 	private Member mPlayer2;
 
-	@ManyToOne(cascade = CascadeType.ALL)
+	@ManyToOne
 	private Match mSatisfiedBy = null;
 
 	public MatchHint() {
