@@ -154,6 +154,7 @@ public class ClientWindow extends JFrame {
 		checkinButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				showPanel(CheckInPanel.class);
+				mCheckinPanel.resetSearch();
 				mCheckinPanel.refreshLadder();
 			}
 		});

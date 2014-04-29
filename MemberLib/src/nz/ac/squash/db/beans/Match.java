@@ -51,8 +51,8 @@ public class Match {
 		mPlayer1 = player1;
 		mPlayer2 = player2;
 	}
-	
-	public long getID(){
+
+	public long getID() {
 		return mID;
 	}
 
@@ -113,11 +113,15 @@ public class Match {
 		DB.executeTransaction(new DB.Transaction() {
 			@Override
 			public void run() {
-				List<MatchHint> satisfiedByThis = query(MatchHint.class,
-						"h where h.mSatisfiedBy = ?0", Match.this);
-				for (MatchHint hint : satisfiedByThis) {
+				for (MatchHint hint : query(MatchHint.class,
+						"h where h.mSatisfiedBy = ?0", Match.this)) {
 					hint.setSatisfiedBy(null);
 					update(hint);
+				}
+
+				for (MatchResult result : query(MatchResult.class,
+						"r where r.mMatch = ?0", Match.this)) {
+					delete(result);
 				}
 
 				// Can only delete object from same session.
@@ -204,19 +208,23 @@ public class Match {
 					- o2.MatchesPlayedToday;
 			int deltaPairedMatches = o1.PairedMatchesToday
 					- o2.PairedMatchesToday;
-			int deltaIsRequest = (o1.IsRequested ? 1 : 0)
-					- (o2.IsRequested ? 1 : 0);
+			int deltaIsRequest = (o1.IsRequested ? 0 : 1)
+					- (o2.IsRequested ? 0 : 1);
 
 			// Prefer matches for players who have played less frequently.
 			if (Math.abs(deltaTotalMatches) > 1)
 				return deltaTotalMatches;
+
+			// Prefer requests.
+			if (deltaIsRequest != 0)
+				return deltaIsRequest;
 
 			// Prefer pairs who have not played each other yet.
 			if (deltaPairedMatches != 0)
 				return deltaPairedMatches;
 
 			// Prefer matches with similar skills.
-			if (deltaSkillDifference != 0 && deltaIsRequest == 0)
+			if (deltaSkillDifference != 0)
 				return (int) Math.signum(deltaSkillDifference);
 
 			return deltaTotalMatches;

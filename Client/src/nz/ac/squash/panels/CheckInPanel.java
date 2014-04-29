@@ -46,6 +46,9 @@ import nz.ac.squash.widget.LadderEntry;
 import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.BorderLayout;
 
 public class CheckInPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -60,7 +63,6 @@ public class CheckInPanel extends JPanel {
 	private JRadioButton mLevel3Radio;
 	private JRadioButton mLevel4Radio;
 	private ButtonGroup mSkillRadioGroup;
-	private JPanel panel;
 	private JLabel label;
 	private JLabel lblLadder;
 	private JPanel mLadderGrid;
@@ -76,10 +78,11 @@ public class CheckInPanel extends JPanel {
 	};
 
 	private Member mSelectedMember = null;
-	private JButton btnManuallyPickYour;
+	private JButton playManualButton;
 
 	private final List<LadderEntry> mLadderEntries = new ArrayList<LadderEntry>();
 	private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
+	private JPanel mLadderPanel;
 
 	public CheckInPanel() {
 		createContents();
@@ -115,20 +118,20 @@ public class CheckInPanel extends JPanel {
 		gbc_lblLadder.gridy = 1;
 		add(lblLadder, gbc_lblLadder);
 
-		panel = new JPanel();
-		panel.setOpaque(false);
-		GridBagConstraints gbc_panel = new GridBagConstraints();
-		gbc_panel.fill = GridBagConstraints.BOTH;
-		gbc_panel.gridx = 1;
-		gbc_panel.gridy = 2;
-		add(panel, gbc_panel);
-		GridBagLayout gbl_panel = new GridBagLayout();
-		gbl_panel.columnWidths = new int[] { 0 };
-		gbl_panel.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
-		gbl_panel.columnWeights = new double[] { 1.0 };
-		gbl_panel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-				0.0, 1.0 };
-		panel.setLayout(gbl_panel);
+		JPanel checkinPanel = new JPanel();
+		checkinPanel.setOpaque(false);
+		GridBagConstraints gbc_checkinPanel = new GridBagConstraints();
+		gbc_checkinPanel.fill = GridBagConstraints.BOTH;
+		gbc_checkinPanel.gridx = 1;
+		gbc_checkinPanel.gridy = 2;
+		add(checkinPanel, gbc_checkinPanel);
+		GridBagLayout gbl_checkinPanel = new GridBagLayout();
+		gbl_checkinPanel.columnWidths = new int[] { 0 };
+		gbl_checkinPanel.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
+		gbl_checkinPanel.columnWeights = new double[] { 1.0 };
+		gbl_checkinPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0,
+				0.0, 0.0, 1.0 };
+		checkinPanel.setLayout(gbl_checkinPanel);
 
 		JLabel lblSelectYour = new JLabel("1: Select your name below");
 		GridBagConstraints gbc_lblSelectYour = new GridBagConstraints();
@@ -136,18 +139,27 @@ public class CheckInPanel extends JPanel {
 		gbc_lblSelectYour.anchor = GridBagConstraints.WEST;
 		gbc_lblSelectYour.gridx = 0;
 		gbc_lblSelectYour.gridy = 0;
-		panel.add(lblSelectYour, gbc_lblSelectYour);
+		checkinPanel.add(lblSelectYour, gbc_lblSelectYour);
 		lblSelectYour.setForeground(Color.WHITE);
 		lblSelectYour.setFont(new Font("Tahoma", Font.PLAIN, 16));
 
 		mSearchField = new JTextFieldPlus();
+		mSearchField.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER
+						&& mSelectedMember != null) {
+					setMemberStatus(true, true);
+				}
+			}
+		});
 		GridBagConstraints gbc_mSearchField = new GridBagConstraints();
 		gbc_mSearchField.insets = new Insets(5, 5, 0, 5);
 		gbc_mSearchField.anchor = GridBagConstraints.NORTH;
 		gbc_mSearchField.fill = GridBagConstraints.HORIZONTAL;
 		gbc_mSearchField.gridx = 0;
 		gbc_mSearchField.gridy = 1;
-		panel.add(mSearchField, gbc_mSearchField);
+		checkinPanel.add(mSearchField, gbc_mSearchField);
 		mSearchField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent event) {
@@ -168,7 +180,7 @@ public class CheckInPanel extends JPanel {
 						@Override
 						public void run() {
 							final MemberResults results = Member.searchMembers(
-									query, 5, Integer.MAX_VALUE, false);
+									query, 5, 2, false);
 							SwingUtilities.invokeLater(new Runnable() {
 								@Override
 								public void run() {
@@ -198,7 +210,7 @@ public class CheckInPanel extends JPanel {
 		gbc_mStep2Label.insets = new Insets(5, 5, 5, 0);
 		gbc_mStep2Label.gridx = 0;
 		gbc_mStep2Label.gridy = 4;
-		panel.add(mStep2Label, gbc_mStep2Label);
+		checkinPanel.add(mStep2Label, gbc_mStep2Label);
 		mStep2Label.setForeground(Color.LIGHT_GRAY);
 		mStep2Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
 
@@ -208,7 +220,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_1.fill = GridBagConstraints.BOTH;
 		gbc_panel_1.gridx = 0;
 		gbc_panel_1.gridy = 5;
-		panel.add(panel_1, gbc_panel_1);
+		checkinPanel.add(panel_1, gbc_panel_1);
 		panel_1.setOpaque(false);
 		panel_1.setLayout(new GridLayout(0, 1, 0, 0));
 
@@ -249,7 +261,7 @@ public class CheckInPanel extends JPanel {
 		gbc_mResultsList.fill = GridBagConstraints.BOTH;
 		gbc_mResultsList.gridx = 0;
 		gbc_mResultsList.gridy = 2;
-		panel.add(mResultsList, gbc_mResultsList);
+		checkinPanel.add(mResultsList, gbc_mResultsList);
 		mResultsList.addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent event) {
 				selectMember(mResultsList.getSelectedValue());
@@ -265,7 +277,7 @@ public class CheckInPanel extends JPanel {
 		gbc_registerButton.fill = GridBagConstraints.HORIZONTAL;
 		gbc_registerButton.gridx = 0;
 		gbc_registerButton.gridy = 3;
-		panel.add(registerButton, gbc_registerButton);
+		checkinPanel.add(registerButton, gbc_registerButton);
 		registerButton.setOpaque(false);
 		registerButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -280,7 +292,7 @@ public class CheckInPanel extends JPanel {
 		gbc_mStep3Label.insets = new Insets(5, 5, 5, 0);
 		gbc_mStep3Label.gridx = 0;
 		gbc_mStep3Label.gridy = 6;
-		panel.add(mStep3Label, gbc_mStep3Label);
+		checkinPanel.add(mStep3Label, gbc_mStep3Label);
 		mStep3Label.setForeground(Color.LIGHT_GRAY);
 		mStep3Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
 
@@ -290,40 +302,39 @@ public class CheckInPanel extends JPanel {
 		gbc_mButtonsPanel.fill = GridBagConstraints.BOTH;
 		gbc_mButtonsPanel.gridx = 0;
 		gbc_mButtonsPanel.gridy = 7;
-		panel.add(mButtonsPanel, gbc_mButtonsPanel);
+		checkinPanel.add(mButtonsPanel, gbc_mButtonsPanel);
 		mButtonsPanel.setOpaque(false);
 		mButtonsPanel.setLayout(new GridLayout(0, 1, 0, 5));
 
-		JButton btnNewButton_1 = new JButton("Participate in the ladder");
-		btnNewButton_1.setOpaque(false);
-		btnNewButton_1.addActionListener(new ActionListener() {
+		JButton playFullButton = new JButton("Participate in the ladder");
+		playFullButton.setOpaque(false);
+		playFullButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				setMemberStatus(true, true);
 			}
 		});
-		btnNewButton_1.setEnabled(false);
-		mButtonsPanel.add(btnNewButton_1);
+		playFullButton.setEnabled(false);
+		mButtonsPanel.add(playFullButton);
 
-		btnManuallyPickYour = new JButton(
-				"Just training and/or King of the Court");
-		btnManuallyPickYour.setOpaque(false);
-		btnManuallyPickYour.addActionListener(new ActionListener() {
+		playManualButton = new JButton("Just training and/or King of the Court");
+		playManualButton.setOpaque(false);
+		playManualButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				setMemberStatus(false, true);
 			}
 		});
-		btnManuallyPickYour.setEnabled(false);
-		mButtonsPanel.add(btnManuallyPickYour);
+		playManualButton.setEnabled(false);
+		mButtonsPanel.add(playManualButton);
 
-		JButton btnNewButton_3 = new JButton("I'm finished for today");
-		btnNewButton_3.setOpaque(false);
-		btnNewButton_3.addActionListener(new ActionListener() {
+		JButton playNoneButton = new JButton("I'm finished for today");
+		playNoneButton.setOpaque(false);
+		playNoneButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				setMemberStatus(false, false);
 			}
 		});
-		btnNewButton_3.setEnabled(false);
-		mButtonsPanel.add(btnNewButton_3);
+		playNoneButton.setEnabled(false);
+		mButtonsPanel.add(playNoneButton);
 
 		JPanel panel2 = new JPanel();
 		GridBagConstraints gbc_panel2 = new GridBagConstraints();
@@ -331,7 +342,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel2.gridheight = 3;
 		gbc_panel2.gridx = 0;
 		gbc_panel2.gridy = 1;
-		panel.add(panel2, gbc_panel2);
+		checkinPanel.add(panel2, gbc_panel2);
 		panel2.setBackground(Color.WHITE);
 
 		JPanel panel_2 = new JPanel();
@@ -340,7 +351,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_2.fill = GridBagConstraints.BOTH;
 		gbc_panel_2.gridx = 0;
 		gbc_panel_2.gridy = 5;
-		panel.add(panel_2, gbc_panel_2);
+		checkinPanel.add(panel_2, gbc_panel_2);
 
 		JPanel panel_3 = new JPanel();
 		panel_3.setBackground(Color.WHITE);
@@ -348,7 +359,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_3.fill = GridBagConstraints.BOTH;
 		gbc_panel_3.gridx = 0;
 		gbc_panel_3.gridy = 7;
-		panel.add(panel_3, gbc_panel_3);
+		checkinPanel.add(panel_3, gbc_panel_3);
 
 		JPanel panel_4 = new JPanel();
 		panel_4.setBackground(Color.decode("#0065B3"));
@@ -356,7 +367,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_4.fill = GridBagConstraints.BOTH;
 		gbc_panel_4.gridx = 0;
 		gbc_panel_4.gridy = 0;
-		panel.add(panel_4, gbc_panel_4);
+		checkinPanel.add(panel_4, gbc_panel_4);
 
 		JPanel panel_5 = new JPanel();
 		panel_5.setBackground(Color.decode("#0065B3"));
@@ -364,7 +375,7 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_5.fill = GridBagConstraints.BOTH;
 		gbc_panel_5.gridx = 0;
 		gbc_panel_5.gridy = 4;
-		panel.add(panel_5, gbc_panel_5);
+		checkinPanel.add(panel_5, gbc_panel_5);
 
 		JPanel panel_6 = new JPanel();
 		panel_6.setBackground(Color.decode("#0065B3"));
@@ -372,30 +383,36 @@ public class CheckInPanel extends JPanel {
 		gbc_panel_6.fill = GridBagConstraints.BOTH;
 		gbc_panel_6.gridx = 0;
 		gbc_panel_6.gridy = 6;
-		panel.add(panel_6, gbc_panel_6);
+		checkinPanel.add(panel_6, gbc_panel_6);
+
+		mLadderPanel = new JPanel();
+		mLadderPanel.setBackground(Color.decode("#0065B3"));
+		GridBagConstraints gbc_mLadderPanel = new GridBagConstraints();
+		gbc_mLadderPanel.fill = GridBagConstraints.BOTH;
+		gbc_mLadderPanel.gridx = 3;
+		gbc_mLadderPanel.gridy = 2;
+		add(mLadderPanel, gbc_mLadderPanel);
+		GridBagLayout gbl_mLadderPanel = new GridBagLayout();
+		gbl_mLadderPanel.columnWidths = new int[] { 378, 0 };
+		gbl_mLadderPanel.rowHeights = new int[] { 363, 0 };
+		gbl_mLadderPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+		gbl_mLadderPanel.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
+		mLadderPanel.setLayout(gbl_mLadderPanel);
 
 		mLadderGrid = new JPanel();
-		mLadderGrid.setOpaque(false);
 		GridBagConstraints gbc_mLadderGrid = new GridBagConstraints();
-		gbc_mLadderGrid.insets = new Insets(5, 5, 5, 5);
+		gbc_mLadderGrid.insets = new Insets(5, 0, 5, 0);
 		gbc_mLadderGrid.fill = GridBagConstraints.BOTH;
-		gbc_mLadderGrid.gridx = 3;
-		gbc_mLadderGrid.gridy = 2;
-		add(mLadderGrid, gbc_mLadderGrid);
+		gbc_mLadderGrid.gridx = 0;
+		gbc_mLadderGrid.gridy = 0;
+		mLadderPanel.add(mLadderGrid, gbc_mLadderGrid);
+		mLadderGrid.setOpaque(false);
 		GridBagLayout gbl_mLadderGrid = new GridBagLayout();
 		gbl_mLadderGrid.columnWidths = new int[] { 0 };
 		gbl_mLadderGrid.rowHeights = new int[] { 0 };
 		gbl_mLadderGrid.columnWeights = new double[] { Double.MIN_VALUE };
 		gbl_mLadderGrid.rowWeights = new double[] { Double.MIN_VALUE };
 		mLadderGrid.setLayout(gbl_mLadderGrid);
-
-		JPanel panel_7 = new JPanel();
-		panel_7.setBackground(Color.decode("#0065B3"));
-		GridBagConstraints gbc_panel_7 = new GridBagConstraints();
-		gbc_panel_7.fill = GridBagConstraints.BOTH;
-		gbc_panel_7.gridx = 3;
-		gbc_panel_7.gridy = 2;
-		add(panel_7, gbc_panel_7);
 	}
 
 	private String getSkillLevel() {
@@ -411,10 +428,15 @@ public class CheckInPanel extends JPanel {
 			return "";
 	}
 
-	private void clearSearch() {
+	public void resetSearch() {
 		mSearchField.setText(null);
 		mResultsList.setEnabled(false);
 		mResultsList.setModel(EMPTY_RESULTS);
+
+		disableSkill();
+		disableMode();
+
+		mSearchField.grabFocus();
 	}
 
 	private void selectMember(Member member) {
@@ -506,11 +528,7 @@ public class CheckInPanel extends JPanel {
 		}
 
 		// Clear check-in input widgets.
-		clearSearch();
-		disableSkill();
-		disableMode();
-
-		mSearchField.grabFocus();
+		resetSearch();
 	}
 
 	private void showRegistration() {
@@ -528,7 +546,7 @@ public class CheckInPanel extends JPanel {
 
 	public void refreshLadder() {
 		mLadderEntries.clear();
-		mLadderGrid.removeAll();
+		mLadderMapping.clear();
 
 		DB.queueTransaction(new Transaction() {
 			@Override
@@ -567,6 +585,8 @@ public class CheckInPanel extends JPanel {
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
+						mLadderGrid.removeAll();
+
 						int i = 0;
 						for (LadderEntry entry : mLadderEntries) {
 							GridBagConstraints gbc = new GridBagConstraints();
@@ -582,6 +602,7 @@ public class CheckInPanel extends JPanel {
 						}
 
 						mLadderGrid.revalidate();
+						mLadderPanel.repaint();
 					}
 				});
 			}

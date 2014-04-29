@@ -23,7 +23,6 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListModel;
@@ -83,7 +82,8 @@ public class ChallengeWindow extends JDialog {
 	private JScrollPane scrollPane_1;
 
 	private ChallengeWindow(Window parent) {
-		super(parent);
+		super(parent, ModalityType.APPLICATION_MODAL);
+
 		setIconImage(Toolkit
 				.getDefaultToolkit()
 				.getImage(
@@ -94,6 +94,8 @@ public class ChallengeWindow extends JDialog {
 
 		pack();
 		setLocationRelativeTo(null);
+
+		getRootPane().setDefaultButton(mChallengeButton);
 	}
 
 	@Override
@@ -147,7 +149,7 @@ public class ChallengeWindow extends JDialog {
 						@Override
 						public void run() {
 							final MemberResults results = Member.searchMembers(
-									query, 5, Integer.MAX_VALUE, true);
+									query, 5, 2, true);
 
 							SwingUtilities.invokeLater(new Runnable() {
 								@Override
@@ -208,7 +210,8 @@ public class ChallengeWindow extends JDialog {
 						@Override
 						public void run() {
 							final MemberResults results = Member.searchMembers(
-									query, 5, Integer.MAX_VALUE, true);
+									query, 5, 2, true);
+
 							SwingUtilities.invokeLater(new Runnable() {
 								@Override
 								public void run() {
@@ -371,7 +374,6 @@ public class ChallengeWindow extends JDialog {
 			}
 		});
 
-		JOptionPane.showMessageDialog(this, "Request logged");
 		dispose();
 	}
 }

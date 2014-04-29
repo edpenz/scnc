@@ -7,21 +7,31 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
@@ -30,10 +40,12 @@ import nz.ac.squash.db.beans.MatchHint;
 import nz.ac.squash.db.beans.MatchHintTempVeto;
 import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
+import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
+import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.Utility;
 
-import java.awt.GridLayout;
+import org.apache.commons.lang3.StringUtils;
 
 public class MatchPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -59,6 +71,12 @@ public class MatchPanel extends JPanel {
 
 	private Set<MatchHint> mTempVetoed = new HashSet<>();
 
+	private final ExecutorService mSearch1Task = new LatestExecutor();
+	private final ExecutorService mSearch2Task = new LatestExecutor();
+
+	private Member mPlayer1Hint = null;
+	private Member mPlayer2Hint = null;
+
 	private MouseListener mHoverListener = new MouseAdapter() {
 		private boolean mIsHovering = false;
 
@@ -82,12 +100,17 @@ public class MatchPanel extends JPanel {
 		}
 	};
 	private JPanel panel_1;
-	private JLabel label;
+	private JLabel mDescLabel;
 	private JButton mCancelButton;
 	private JPanel mReviewPanel;
 	private JButton mPlayer1WonButton;
 	private JButton mPlayer2WonButton;
 	private JButton mDrawButton;
+	private JPanel mHintKickPanel;
+	private JPanel mKickPanel;
+	private JPanel mHintPanel;
+	private JTextField mPlayer1Field;
+	private JTextField mPlayer2Field;
 
 	public MatchPanel(int court, int slot) {
 		mCourt = court;
@@ -179,16 +202,17 @@ public class MatchPanel extends JPanel {
 		mSchedulePanel.add(mSchedulePanelInner, gbc_mSchedulePanelInner);
 		GridBagLayout gbl_mSchedulePanelInner = new GridBagLayout();
 		gbl_mSchedulePanelInner.columnWidths = new int[] { 0, 0 };
-		gbl_mSchedulePanelInner.rowHeights = new int[] { 0, 0, 0, 0, 0 };
+		gbl_mSchedulePanelInner.rowHeights = new int[] { 0, 0, 0, 0 };
 		gbl_mSchedulePanelInner.columnWeights = new double[] { 1.0,
 				Double.MIN_VALUE };
-		gbl_mSchedulePanelInner.rowWeights = new double[] { 1.0, 1.0, 1.0, 1.0,
+		gbl_mSchedulePanelInner.rowWeights = new double[] { 1.0, 0.0, 2.0,
 				Double.MIN_VALUE };
 		mSchedulePanelInner.setLayout(gbl_mSchedulePanelInner);
 
 		panel_1 = new JPanel();
 		panel_1.setOpaque(false);
 		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
+		gbc_panel_1.insets = new Insets(0, 0, 5, 0);
 		gbc_panel_1.fill = GridBagConstraints.BOTH;
 		gbc_panel_1.gridx = 0;
 		gbc_panel_1.gridy = 0;
@@ -228,41 +252,14 @@ public class MatchPanel extends JPanel {
 		gbc_mCancelButton.gridy = 0;
 		panel_1.add(mCancelButton, gbc_mCancelButton);
 
-		mKickPlayer1Button = new JButton("Kick player 1");
-		mKickPlayer1Button.setEnabled(false);
-		mKickPlayer1Button.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				kickPlayer(mMatch.getPlayer1());
-			}
-		});
-		GridBagConstraints gbc_mKickPlayer1Button = new GridBagConstraints();
-		gbc_mKickPlayer1Button.fill = GridBagConstraints.BOTH;
-		gbc_mKickPlayer1Button.gridx = 0;
-		gbc_mKickPlayer1Button.gridy = 2;
-		mSchedulePanelInner.add(mKickPlayer1Button, gbc_mKickPlayer1Button);
-		mKickPlayer1Button.setOpaque(false);
-
-		mKickPlayer2Button = new JButton("Kick player 2");
-		mKickPlayer2Button.setEnabled(false);
-		mKickPlayer2Button.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				kickPlayer(mMatch.getPlayer2());
-			}
-		});
-		mKickPlayer2Button.setOpaque(false);
-		GridBagConstraints gbc_mKickPlayer2Button = new GridBagConstraints();
-		gbc_mKickPlayer2Button.fill = GridBagConstraints.BOTH;
-		gbc_mKickPlayer2Button.gridx = 0;
-		gbc_mKickPlayer2Button.gridy = 3;
-		mSchedulePanelInner.add(mKickPlayer2Button, gbc_mKickPlayer2Button);
-
-		label = new JLabel(" ");
-		label.setOpaque(false);
-		label.setEnabled(false);
-		GridBagConstraints gbc_label = new GridBagConstraints();
-		gbc_label.gridx = 0;
-		gbc_label.gridy = 1;
-		mSchedulePanelInner.add(label, gbc_label);
+		mDescLabel = new JLabel(" ");
+		mDescLabel.setOpaque(false);
+		mDescLabel.setEnabled(false);
+		GridBagConstraints gbc_mDescLabel = new GridBagConstraints();
+		gbc_mDescLabel.insets = new Insets(0, 0, 5, 0);
+		gbc_mDescLabel.gridx = 0;
+		gbc_mDescLabel.gridy = 1;
+		mSchedulePanelInner.add(mDescLabel, gbc_mDescLabel);
 
 		mReviewPanel = new JPanel();
 		mReviewPanel.setOpaque(false);
@@ -285,7 +282,7 @@ public class MatchPanel extends JPanel {
 			}
 		});
 
-		mDrawButton = new JButton("Draw");
+		mDrawButton = new JButton("Clear");
 		mDrawButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				indicateWinner(null);
@@ -295,6 +292,53 @@ public class MatchPanel extends JPanel {
 		mReviewPanel.add(mDrawButton);
 		mPlayer2WonButton.setOpaque(false);
 		mReviewPanel.add(mPlayer2WonButton);
+
+		mHintKickPanel = new JPanel();
+		mHintKickPanel.setOpaque(false);
+		GridBagConstraints gbc_mHintKickPanel = new GridBagConstraints();
+		gbc_mHintKickPanel.fill = GridBagConstraints.BOTH;
+		gbc_mHintKickPanel.gridx = 0;
+		gbc_mHintKickPanel.gridy = 2;
+		mSchedulePanelInner.add(mHintKickPanel, gbc_mHintKickPanel);
+		mHintKickPanel.setLayout(new CardLayout(0, 0));
+
+		mKickPanel = new JPanel();
+		mKickPanel.setOpaque(false);
+		mHintKickPanel.add(mKickPanel, "kick_panel");
+		mKickPanel.setLayout(new GridLayout(2, 2, 0, 0));
+
+		mKickPlayer1Button = new JButton("Kick player 1");
+		mKickPanel.add(mKickPlayer1Button);
+		mKickPlayer1Button.setEnabled(false);
+		mKickPlayer1Button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				kickPlayer(mMatch.getPlayer1());
+			}
+		});
+		mKickPlayer1Button.setOpaque(false);
+
+		mKickPlayer2Button = new JButton("Kick player 2");
+		mKickPanel.add(mKickPlayer2Button);
+		mKickPlayer2Button.setEnabled(false);
+		mKickPlayer2Button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				kickPlayer(mMatch.getPlayer2());
+			}
+		});
+		mKickPlayer2Button.setOpaque(false);
+
+		mHintPanel = new JPanel();
+		mHintPanel.setOpaque(false);
+		mHintKickPanel.add(mHintPanel, "hint_panel");
+		mHintPanel.setLayout(new GridLayout(2, 0, 0, 0));
+
+		mPlayer1Field = new JTextField();
+		mHintPanel.add(mPlayer1Field);
+		mPlayer1Field.setColumns(10);
+		
+		mPlayer2Field = new JTextField();
+		mHintPanel.add(mPlayer2Field);
+		mPlayer2Field.setColumns(10);
 	}
 
 	private void recursivelyAddMouseListener(Container container,
@@ -362,6 +406,8 @@ public class MatchPanel extends JPanel {
 					+ " won");
 			mPlayer2WonButton.setText(mMatch.getPlayer2().getNameFormatted()
 					+ " won");
+
+			//((CardLayout) mHintKickPanel.getLayout()).show(mHintKickPanel, "kick_panel");
 		} else {
 			mScheduleButton.setText("Schedule");
 
@@ -370,6 +416,8 @@ public class MatchPanel extends JPanel {
 
 			mPlayer1WonButton.setText("Player 1 won");
 			mPlayer2WonButton.setText("Player 2 won");
+
+			//((CardLayout) mHintKickPanel.getLayout()).show(mHintKickPanel, "hint_panel");
 		}
 
 		if (mResult != null) {
@@ -459,8 +507,9 @@ public class MatchPanel extends JPanel {
 			return;
 
 		mMatch.cancel();
-
 		mMatch = null;
+		mResult = null;
+
 		refreshPanel();
 	}
 

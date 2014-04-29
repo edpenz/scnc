@@ -16,6 +16,7 @@ import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.util.Tuple;
+import nz.ac.squash.util.Utility;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -328,16 +329,27 @@ public class Member {
 		}
 
 		// Otherwise select top N results to return.
-		outer: for (int i = 0; toReturn.size() < topN
-				&& i < sortedMembers.size(); i++) {
-			for (int match : sortedMembers.get(i).getValue()) {
-				if (match > threshold)
-					continue outer;
+		int bestScore = sortedMembers.isEmpty() ? 0 : sumScore(sortedMembers
+				.get(0).getValue());
+		for (int i = 0; toReturn.size() < topN && i < sortedMembers.size(); i++) {
+			int score = sumScore(sortedMembers.get(i).getValue());
+
+			if (score <= bestScore + threshold) {
+				toReturn.add(sortedMembers.get(i).getKey());
+			} else {
+				break;
 			}
-			toReturn.add(sortedMembers.get(i).getKey());
 		}
 
 		return toReturn;
+	}
+
+	private static int sumScore(int[] score) {
+		int sum = 0;
+		for (int i : score) {
+			sum += i;
+		}
+		return sum;
 	}
 
 	public static class MemberResults extends ArrayList<Member> {

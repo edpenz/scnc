@@ -136,6 +136,7 @@ public class SchedulePanel extends JPanel {
 		rtdlblPastGames.setIcon(new VTextIcon(rtdlblPastGames, "Previous",
 				VTextIcon.ROTATE_LEFT));
 		GridBagConstraints gbc_rtdlblPastGames = new GridBagConstraints();
+		gbc_rtdlblPastGames.gridheight = 2;
 		gbc_rtdlblPastGames.gridx = 0;
 		gbc_rtdlblPastGames.gridy = 2;
 		add(rtdlblPastGames, gbc_rtdlblPastGames);
@@ -147,7 +148,7 @@ public class SchedulePanel extends JPanel {
 				VTextIcon.ROTATE_LEFT));
 		GridBagConstraints gbc_rtdlblNowPlaying = new GridBagConstraints();
 		gbc_rtdlblNowPlaying.gridx = 0;
-		gbc_rtdlblNowPlaying.gridy = 3;
+		gbc_rtdlblNowPlaying.gridy = 4;
 		add(rtdlblNowPlaying, gbc_rtdlblNowPlaying);
 
 		JLabel rtdlblUpcomingGames = new JLabel();
@@ -155,9 +156,9 @@ public class SchedulePanel extends JPanel {
 		rtdlblUpcomingGames.setIcon(new VTextIcon(rtdlblPastGames, "Upcoming",
 				VTextIcon.ROTATE_LEFT));
 		GridBagConstraints gbc_rtdlblUpcomingGames = new GridBagConstraints();
-		gbc_rtdlblUpcomingGames.gridheight = 4;
+		gbc_rtdlblUpcomingGames.gridheight = 3;
 		gbc_rtdlblUpcomingGames.gridx = 0;
-		gbc_rtdlblUpcomingGames.gridy = 4;
+		gbc_rtdlblUpcomingGames.gridy = 5;
 		add(rtdlblUpcomingGames, gbc_rtdlblUpcomingGames);
 
 		mMatchGrid = new JPanel();
@@ -176,7 +177,7 @@ public class SchedulePanel extends JPanel {
 		for (int time = 0; time < 6; time++) {
 			for (int court = 0; court < 8; court++) {
 				MatchPanel matchPanel = mMatchPanels[court][time] = new MatchPanel(
-						COURTS[court], time - 1);
+						COURTS[court], time - 2);
 
 				mMatchGrid.add(matchPanel);
 			}
@@ -244,6 +245,7 @@ public class SchedulePanel extends JPanel {
 		JPanel panel_1 = new JPanel();
 		panel_1.setBackground(Color.LIGHT_GRAY);
 		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
+		gbc_panel_1.gridheight = 2;
 		gbc_panel_1.gridwidth = 9;
 		gbc_panel_1.fill = GridBagConstraints.BOTH;
 		gbc_panel_1.gridx = 0;
@@ -256,17 +258,17 @@ public class SchedulePanel extends JPanel {
 		gbc_panel.gridwidth = 9;
 		gbc_panel.fill = GridBagConstraints.BOTH;
 		gbc_panel.gridx = 0;
-		gbc_panel.gridy = 3;
+		gbc_panel.gridy = 4;
 		add(panel, gbc_panel);
 
 		JPanel panel_3 = new JPanel();
 		panel_3.setBackground(Color.WHITE);
 		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
 		gbc_panel_3.gridwidth = 9;
-		gbc_panel_3.gridheight = 4;
+		gbc_panel_3.gridheight = 3;
 		gbc_panel_3.fill = GridBagConstraints.BOTH;
 		gbc_panel_3.gridx = 0;
-		gbc_panel_3.gridy = 4;
+		gbc_panel_3.gridy = 5;
 		add(panel_3, gbc_panel_3);
 	}
 

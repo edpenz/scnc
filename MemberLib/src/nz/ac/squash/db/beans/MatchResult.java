@@ -84,7 +84,7 @@ public class MatchResult {
 				final String skill = new MemberStatus(member).getSkillLevel();
 				final List<Member> ladder = getLadder();
 
-				int worseThan = ladder.size();
+				int worseThan = 0;
 				for (int i = 0; i < ladder.size(); i++) {
 					final Member other = ladder.get(i);
 
