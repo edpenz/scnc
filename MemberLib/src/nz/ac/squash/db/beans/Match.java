@@ -111,6 +111,12 @@ public class Match {
 		return ((Match) obj).mID == mID;
 	}
 
+	@Override
+	public String toString() {
+		return mPlayer1.getNameFormatted() + " versus "
+				+ mPlayer2.getNameFormatted();
+	}
+
 	public void cancel() {
 		DB.executeTransaction(new DB.Transaction() {
 			@Override
@@ -225,7 +231,7 @@ public class Match {
 		}
 	};
 
-	public static final Comparator<MatchProperties> BASIC_COMPARATOR = new Comparator<MatchProperties>() {
+	public static final Comparator<MatchProperties> LADDER_COMPARATOR = new Comparator<MatchProperties>() {
 		@Override
 		public int compare(MatchProperties o1, MatchProperties o2) {
 			if (o1 == null)
@@ -242,7 +248,8 @@ public class Match {
 			int deltaIsRequest = (o1.IsRequested ? 0 : 1)
 					- (o2.IsRequested ? 0 : 1);
 
-			// Prefer matches for players who have played less frequently.
+			// Prefer matches for players who have played significantly less
+			// frequently.
 			if (Math.abs(deltaTotalMatches) > 1)
 				return deltaTotalMatches;
 
@@ -275,11 +282,11 @@ public class Match {
 			@Override
 			public void run() {
 				// Load reference materials before n^2 loop.
-				Date today = Utility.stripTime(new Date());
+				final Date today = Utility.stripTime(new Date());
 
 				// Get a list of present members, and their latest sign-in
 				// status.
-				Map<Member, MemberStatus> memberStatuses = new HashMap<>();
+				final Map<Member, MemberStatus> memberStatuses = new HashMap<>();
 				{
 					for (MemberStatus latestStatus : MemberStatus
 							.getPresentMembers()) {
@@ -294,9 +301,9 @@ public class Match {
 				}
 
 				// Count how many matches each player has had.
-				Map<Member, Integer> todaysMatchCounts = new HashMap<>();
-				Map<Tuple<Member, Member>, Integer> allPairedMatchCounts = new HashMap<>();
-				Map<Tuple<Member, Member>, Integer> todaysPairedMatchCounts = new HashMap<>();
+				final Map<Member, Integer> todaysMatchCounts = new HashMap<>();
+				final Map<Tuple<Member, Member>, Integer> allPairedMatchCounts = new HashMap<>();
+				final Map<Tuple<Member, Member>, Integer> todaysPairedMatchCounts = new HashMap<>();
 				for (Match match : listAll(Match.class)) {
 					final Tuple<Member, Member> pairing = Member.orderedPair(
 							match.getPlayer1(), match.getPlayer2());
@@ -328,16 +335,38 @@ public class Match {
 						if (player1.equals(player2))
 							break;
 
-						// Veto match according to hints.
-						int vetoedOrSatisfied = 0;
-						for (MatchHint hint : matchHints) {
-							if (hint.isSatisfiedBy(player1, player2))
-								vetoedOrSatisfied = 1;
+						final Tuple<Member, Member> pairing = Member
+								.orderedPair(player1, player2);
 
-							if (hint.vetosMatch(player1, player2))
-								vetoedOrSatisfied = -1;
+						// Apply hints to veto or prefer match.
+						List<MatchHint> effectiveHints = new ArrayList<MatchHint>();
+						int hintEffect = 0;
+
+						for (MatchHint hint : matchHints) {
+							// Check if hint is actually still valid.
+							final boolean inEffect = hint.isInEffect(
+									memberStatuses.get(hint.getPlayer1()),
+									memberStatuses.get(hint.getPlayer2()));
+							if (!inEffect)
+								continue;
+
+							// Check if hint is overruled by an previous ones.
+							final boolean overruled = hint.isOverruledByAny(
+									effectiveHints, pairing);
+							if (overruled)
+								continue;
+
+							// Check if and how hint applies to this match.
+							if (hint.isSatisfiedBy(player1, player2)) {
+								hintEffect = 1;
+								effectiveHints.add(hint);
+							} else if (hint.vetosMatch(player1, player2)) {
+								hintEffect = -1;
+								effectiveHints.add(hint);
+							}
 						}
-						if (vetoedOrSatisfied < 0)
+
+						if (hintEffect < 0)
 							continue;
 
 						// Veto match if specific player hinted.
@@ -347,16 +376,14 @@ public class Match {
 							continue;
 
 						// Veto match if a player does not want to play.
+						// TODO Make hint?
 						if ((!memberStatuses.get(player1).wantsGames() || !memberStatuses
 								.get(player2).wantsGames())
-								&& !(vetoedOrSatisfied > 0))
+								&& !(hintEffect > 0))
 							continue;
 
-						final Tuple<Member, Member> pairing = Member
-								.orderedPair(player1, player2);
-
 						// Compute properties of potential match.
-						MatchProperties score = new MatchProperties();
+						final MatchProperties score = new MatchProperties();
 						{
 							score.SkillDifference = Utility
 									.deltaSkill(memberStatuses.get(player1)
@@ -376,11 +403,11 @@ public class Match {
 							score.PairedMatches = Utility.firstNonNull(
 									allPairedMatchCounts.get(pairing), 0);
 
-							score.IsRequested = vetoedOrSatisfied > 0;
+							score.IsRequested = hintEffect > 0;
 						}
 
 						// Pick best so far.
-						if (BASIC_COMPARATOR.compare(bestMatchScore, score) > 0) {
+						if (LADDER_COMPARATOR.compare(bestMatchScore, score) > 0) {
 							bestMatch = new Match(player1, player2, court, slot);
 							bestMatchScore = score;
 						}

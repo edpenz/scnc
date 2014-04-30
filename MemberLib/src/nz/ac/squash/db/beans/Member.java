@@ -16,7 +16,6 @@ import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.util.Tuple;
-import nz.ac.squash.util.Utility;
 
 import org.apache.commons.lang3.StringUtils;
 

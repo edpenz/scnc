@@ -1,11 +1,10 @@
 package nz.ac.squash.db.beans;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -15,6 +14,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
+import nz.ac.squash.util.Tuple;
 import nz.ac.squash.util.Utility;
 
 @Entity
@@ -89,9 +89,32 @@ public abstract class MatchHint {
 		return true;
 	}
 
+	public boolean overrules(MatchHint otherHint, Tuple<Member, Member> forMatch) {
+		return false;
+	}
+
 	public abstract boolean vetosMatch(Member player1, Member player2);
 
 	public abstract boolean isSatisfiedBy(Member player1, Member player2);
+
+	public boolean isOverruledByAny(Collection<MatchHint> hints,
+			Tuple<Member, Member> forMatch) {
+		for (MatchHint hint : hints) {
+			if (hint.overrules(this, forMatch))
+				return true;
+		}
+		return false;
+	}
+
+	public static int checkForOverrule(MatchHint a, MatchHint b,
+			Tuple<Member, Member> forMatch) {
+		if (a.overrules(b, forMatch))
+			return -1;
+		else if (b.overrules(a, forMatch))
+			return 1;
+		else
+			return 0;
+	}
 
 	public static List<MatchHint> getHintsInEffect() {
 		final Date today = Utility.stripTime(new Date());

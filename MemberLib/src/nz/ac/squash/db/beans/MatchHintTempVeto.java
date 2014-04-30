@@ -1,5 +1,7 @@
 package nz.ac.squash.db.beans;
 
+import nz.ac.squash.util.Tuple;
+
 public class MatchHintTempVeto extends MatchHint {
 	public MatchHintTempVeto(Member player1, Member player2) {
 		setPlayer1(player1);
@@ -42,5 +44,10 @@ public class MatchHintTempVeto extends MatchHint {
 
 		return getPlayer1().equals(other.getPlayer1())
 				&& getPlayer2().equals(other.getPlayer2());
+	}
+
+	@Override
+	public boolean overrules(MatchHint otherHint, Tuple<Member, Member> forMatch) {
+		return otherHint instanceof MatchHintRequest;
 	}
 }

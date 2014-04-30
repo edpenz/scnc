@@ -2,6 +2,8 @@ package nz.ac.squash.db.beans;
 
 import javax.persistence.Entity;
 
+import nz.ac.squash.util.Tuple;
+
 @Entity
 public class MatchHintRequest extends MatchHint {
 	@Override
@@ -36,5 +38,30 @@ public class MatchHintRequest extends MatchHint {
 			playerCount++;
 
 		return playerCount == 2;
+	}
+
+	@Override
+	public boolean isInEffect(MemberStatus player1Status,
+			MemberStatus player2Status) {
+		boolean player1Present = player1Status != null
+				&& player1Status.isPresent();
+		boolean player2Present = player2Status != null
+				&& player2Status.isPresent();
+		
+		return player1Present && player2Present;
+	}
+
+	@Override
+	public boolean overrules(MatchHint otherHint, Tuple<Member, Member> match) {
+		if (otherHint instanceof MatchHintRequest) {
+			final MatchHintRequest other = (MatchHintRequest) otherHint;
+
+			boolean weSatisfy = isSatisfiedBy(match.getA(), match.getB());
+			boolean theyVeto = other.vetosMatch(match.getA(), match.getB());
+
+			return weSatisfy && theyVeto;
+		}
+
+		return false;
 	}
 }

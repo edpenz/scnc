@@ -39,4 +39,9 @@ public class Tuple<A, B> {
 		}
 		return false;
 	}
+
+	@Override
+	public String toString() {
+		return "(" + a + ", " + b + ")";
+	}
 }

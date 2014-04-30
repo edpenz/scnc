@@ -366,10 +366,10 @@ public class ChallengeWindow extends JDialog {
 		DB.executeTransaction(new DB.Transaction() {
 			@Override
 			public void run() {
+				// TODO Ignore challenge if identical one is already pending.
 				MatchHintRequest request = new MatchHintRequest();
 				request.setPlayer1(mPlayer1);
 				request.setPlayer2(mPlayer2);
-
 				update(request);
 			}
 		});
