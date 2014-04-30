@@ -13,8 +13,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -26,10 +24,7 @@ import java.util.concurrent.ExecutorService;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -46,9 +41,12 @@ import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.Utility;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 
 public class MatchPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
+
+	private Logger sLogger = Logger.getLogger(MatchPanel.class);
 
 	private JLabel mPlayer1Label;
 	private JLabel mPlayer2Label;
@@ -109,8 +107,8 @@ public class MatchPanel extends JPanel {
 	private JPanel mHintKickPanel;
 	private JPanel mKickPanel;
 	private JPanel mHintPanel;
-	private JTextField mPlayer1Field;
-	private JTextField mPlayer2Field;
+	private JTextFieldPlus mPlayer1Field;
+	private JTextFieldPlus mPlayer2Field;
 
 	public MatchPanel(int court, int slot) {
 		mCourt = court;
@@ -143,7 +141,7 @@ public class MatchPanel extends JPanel {
 		gbl_mStatusPanel.rowWeights = new double[] { 0.0 };
 		mStatusPanel.setLayout(gbl_mStatusPanel);
 
-		mStatusLabel = new JLabel("Not in use");
+		mStatusLabel = new JLabel("---");
 		mStatusLabel.setForeground(Color.GRAY);
 		GridBagConstraints gbc_mStatusLabel = new GridBagConstraints();
 		gbc_mStatusLabel.anchor = GridBagConstraints.WEST;
@@ -264,7 +262,14 @@ public class MatchPanel extends JPanel {
 		mReviewPanel = new JPanel();
 		mReviewPanel.setOpaque(false);
 		add(mReviewPanel, "review_panel");
-		mReviewPanel.setLayout(new GridLayout(0, 1, 0, 0));
+		GridBagLayout gbl_mReviewPanel = new GridBagLayout();
+		gbl_mReviewPanel.columnWidths = new int[] { 0, 0, 0, 0 };
+		gbl_mReviewPanel.rowHeights = new int[] { 0, 0, 0, 0 };
+		gbl_mReviewPanel.columnWeights = new double[] { 1.0, 0.0, 1.0,
+				Double.MIN_VALUE };
+		gbl_mReviewPanel.rowWeights = new double[] { 1.0, 0.0, 1.0,
+				Double.MIN_VALUE };
+		mReviewPanel.setLayout(gbl_mReviewPanel);
 
 		mPlayer1WonButton = new JButton("Player 1 won");
 		mPlayer1WonButton.addActionListener(new ActionListener() {
@@ -273,7 +278,12 @@ public class MatchPanel extends JPanel {
 			}
 		});
 		mPlayer1WonButton.setOpaque(false);
-		mReviewPanel.add(mPlayer1WonButton);
+		GridBagConstraints gbc_mPlayer1WonButton = new GridBagConstraints();
+		gbc_mPlayer1WonButton.gridwidth = 3;
+		gbc_mPlayer1WonButton.fill = GridBagConstraints.BOTH;
+		gbc_mPlayer1WonButton.gridx = 0;
+		gbc_mPlayer1WonButton.gridy = 0;
+		mReviewPanel.add(mPlayer1WonButton, gbc_mPlayer1WonButton);
 
 		mPlayer2WonButton = new JButton("Player 2 won");
 		mPlayer2WonButton.addActionListener(new ActionListener() {
@@ -281,17 +291,26 @@ public class MatchPanel extends JPanel {
 				indicateWinner(mMatch.getPlayer2());
 			}
 		});
+		mPlayer2WonButton.setOpaque(false);
+		GridBagConstraints gbc_mPlayer2WonButton = new GridBagConstraints();
+		gbc_mPlayer2WonButton.gridwidth = 3;
+		gbc_mPlayer2WonButton.fill = GridBagConstraints.BOTH;
+		gbc_mPlayer2WonButton.gridx = 0;
+		gbc_mPlayer2WonButton.gridy = 2;
+		mReviewPanel.add(mPlayer2WonButton, gbc_mPlayer2WonButton);
 
-		mDrawButton = new JButton("Clear");
+		mDrawButton = new JButton("Draw / unknown");
 		mDrawButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				indicateWinner(null);
 			}
 		});
 		mDrawButton.setOpaque(false);
-		mReviewPanel.add(mDrawButton);
-		mPlayer2WonButton.setOpaque(false);
-		mReviewPanel.add(mPlayer2WonButton);
+		GridBagConstraints gbc_mDrawButton = new GridBagConstraints();
+		gbc_mDrawButton.fill = GridBagConstraints.BOTH;
+		gbc_mDrawButton.gridx = 1;
+		gbc_mDrawButton.gridy = 1;
+		mReviewPanel.add(mDrawButton, gbc_mDrawButton);
 
 		mHintKickPanel = new JPanel();
 		mHintKickPanel.setOpaque(false);
@@ -332,13 +351,97 @@ public class MatchPanel extends JPanel {
 		mHintKickPanel.add(mHintPanel, "hint_panel");
 		mHintPanel.setLayout(new GridLayout(2, 0, 0, 0));
 
-		mPlayer1Field = new JTextField();
+		mPlayer1Field = new JTextFieldPlus();
 		mHintPanel.add(mPlayer1Field);
+		mPlayer1Field.setPlaceholder("Player 1");
 		mPlayer1Field.setColumns(10);
-		
-		mPlayer2Field = new JTextField();
+		mPlayer1Field.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				changedUpdate(e);
+			}
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				changedUpdate(e);
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				final String query = mPlayer1Field.getText();
+
+				if (!StringUtils.isEmpty(query) && mPlayer1Hint == null) {
+					mSearch1Task.execute(new Runnable() {
+						@Override
+						public void run() {
+							final MemberResults results = Member.searchMembers(
+									query, 1, Integer.MAX_VALUE, true);
+
+							SwingUtilities.invokeLater(new Runnable() {
+								@Override
+								public void run() {
+									if (results.hasUniqueMatch()
+											&& !results.get(0).equals(
+													mPlayer2Hint)) {
+										mPlayer1Hint = results.get(0);
+
+										mPlayer1Field.setText(mPlayer1Hint
+												.getNameFormatted());
+										mPlayer1Field.setEditable(false);
+									}
+								}
+							});
+						}
+					});
+				}
+			}
+		});
+
+		mPlayer2Field = new JTextFieldPlus();
 		mHintPanel.add(mPlayer2Field);
+		mPlayer2Field.setPlaceholder("Player 2");
 		mPlayer2Field.setColumns(10);
+		mPlayer2Field.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				changedUpdate(e);
+			}
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				changedUpdate(e);
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				final String query = mPlayer2Field.getText();
+
+				if (!StringUtils.isEmpty(query) && mPlayer2Hint == null) {
+					mSearch2Task.execute(new Runnable() {
+						@Override
+						public void run() {
+							final MemberResults results = Member.searchMembers(
+									query, 1, Integer.MAX_VALUE, true);
+
+							SwingUtilities.invokeLater(new Runnable() {
+								@Override
+								public void run() {
+									if (results.hasUniqueMatch()
+											&& !results.get(0).equals(
+													mPlayer1Hint)) {
+										mPlayer2Hint = results.get(0);
+
+										mPlayer2Field.setText(mPlayer2Hint
+												.getNameFormatted());
+										mPlayer2Field.setEditable(false);
+									}
+								}
+							});
+						}
+					});
+				}
+			}
+		});
 	}
 
 	private void recursivelyAddMouseListener(Container container,
@@ -392,8 +495,15 @@ public class MatchPanel extends JPanel {
 			mPlayer1Label.setText(mMatch.getPlayer1().getNameFormatted());
 			mPlayer2Label.setText(mMatch.getPlayer2().getNameFormatted());
 
-			// TODO Show skill level.
-			mVersusLabel.setText("versus");
+			if (mResult != null) {
+				if (mResult.getWinner().equals(mMatch.getPlayer1())) {
+					mVersusLabel.setText("won against");
+				} else {
+					mVersusLabel.setText("lost to");
+				}
+			} else {
+				mVersusLabel.setText("versus");
+			}
 
 			mScheduleButton.setText("Reschedule");
 
@@ -407,7 +517,8 @@ public class MatchPanel extends JPanel {
 			mPlayer2WonButton.setText(mMatch.getPlayer2().getNameFormatted()
 					+ " won");
 
-			//((CardLayout) mHintKickPanel.getLayout()).show(mHintKickPanel, "kick_panel");
+			((CardLayout) mHintKickPanel.getLayout()).show(mHintKickPanel,
+					"kick_panel");
 		} else {
 			mScheduleButton.setText("Schedule");
 
@@ -417,7 +528,8 @@ public class MatchPanel extends JPanel {
 			mPlayer1WonButton.setText("Player 1 won");
 			mPlayer2WonButton.setText("Player 2 won");
 
-			//((CardLayout) mHintKickPanel.getLayout()).show(mHintKickPanel, "hint_panel");
+			((CardLayout) mHintKickPanel.getLayout()).show(mHintKickPanel,
+					"hint_panel");
 		}
 
 		if (mResult != null) {
@@ -461,16 +573,32 @@ public class MatchPanel extends JPanel {
 		}
 
 		mTempVetoed.clear();
+		clearHints();
 	}
 
 	private void scheduleMatch() {
+		// Avoid the current match if rescheduling.
 		if (mMatch != null) {
 			mTempVetoed.add(new MatchHintTempVeto(mMatch.getPlayer1(), mMatch
 					.getPlayer2()));
 			cancelMatch();
 		}
 
-		mMatch = Match.createMatch(mCourt, mSlot, mTempVetoed);
+		// Find the best match that meets any hints.
+		if (mPlayer1Hint != null && mPlayer2Hint != null) {
+			mMatch = Match.createMatch(mPlayer1Hint, mPlayer2Hint, mCourt,
+					mSlot);
+		} else if (mPlayer1Hint != null || mPlayer2Hint != null) {
+			mMatch = Match.createMatch(
+					Utility.firstNonNull(mPlayer1Hint, mPlayer2Hint), mCourt,
+					mSlot, mTempVetoed);
+
+		} else {
+			mMatch = Match.createMatch(mCourt, mSlot, mTempVetoed);
+		}
+
+		// Update UI to show match.
+		clearHints();
 		refreshPanel();
 	}
 
@@ -511,6 +639,18 @@ public class MatchPanel extends JPanel {
 		mResult = null;
 
 		refreshPanel();
+	}
+
+	private void clearHints() {
+		mPlayer1Hint = null;
+		mPlayer2Hint = null;
+
+		// TODO Move to refresh.
+		mPlayer1Field.setText("");
+		mPlayer2Field.setText("");
+
+		mPlayer1Field.setEditable(true);
+		mPlayer2Field.setEditable(true);
 	}
 
 	private void indicateWinner(final Member winner) {

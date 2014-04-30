@@ -1,5 +1,6 @@
 package nz.ac.squash.db.beans;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -14,6 +15,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
+import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.util.Tuple;
 import nz.ac.squash.util.Utility;
 
@@ -130,6 +132,35 @@ public class Match {
 		});
 	}
 
+	public static Match createMatch(final Member player1, final Member player2,
+			final int court, final int slot) {
+		final Match[] match = new Match[1];
+
+		DB.executeTransaction(new Transaction() {
+			@Override
+			public void run() {
+				// Create fixed match.
+				match[0] = new Match(player1, player2, court, slot);
+
+				// Satisfy any relevant hints.
+				List<MatchHint> matchHints = MatchHint.getHintsInEffect();
+
+				for (MatchHint hint : matchHints) {
+					if (hint.isSatisfiedBy(player1, player2)) {
+						hint.setSatisfiedBy(match[0]);
+						update(hint);
+						break;
+					}
+				}
+
+				// Persist match.
+				update(match[0]);
+			}
+		});
+
+		return match[0];
+	}
+
 	public static Match createMatch(int court, int slot) {
 		return createMatch(null, court, slot, null);
 	}
@@ -233,7 +264,7 @@ public class Match {
 
 	private static <T> void incCount(Map<T, Integer> map, T key) {
 		Integer count = map.get(key);
-		count = Utility.defaultIfNull(count, 0);
+		count = Utility.firstNonNull(count, 0);
 		map.put(key, count + 1);
 	}
 
@@ -280,10 +311,12 @@ public class Match {
 				}
 
 				// Get match hints.
-				List<MatchHint> matchHints = query(MatchHint.class,
-						"h where h.mDate > ?0 and h.mSatisfiedBy = null", today);
-				if (extraHints != null) {
-					matchHints.addAll(extraHints);
+				final List<MatchHint> matchHints = new ArrayList<MatchHint>();
+				{
+					matchHints.addAll(MatchHint.getHintsInEffect());
+					if (extraHints != null) {
+						matchHints.addAll(extraHints);
+					}
 				}
 
 				// Iterate over each player pairing and compute score.
@@ -307,6 +340,12 @@ public class Match {
 						if (vetoedOrSatisfied < 0)
 							continue;
 
+						// Veto match if specific player hinted.
+						// TODO Make actual hint.
+						if (playerHint != null && !player1.equals(playerHint)
+								&& !player2.equals(playerHint))
+							continue;
+
 						// Veto match if a player does not want to play.
 						if ((!memberStatuses.get(player1).wantsGames() || !memberStatuses
 								.get(player2).wantsGames())
@@ -324,17 +363,17 @@ public class Match {
 											.getSkillLevel(), memberStatuses
 											.get(player2).getSkillLevel());
 
-							Integer player1MatchCount = Utility.defaultIfNull(
+							Integer player1MatchCount = Utility.firstNonNull(
 									todaysMatchCounts.get(player1), 0);
-							Integer player2MatchCount = Utility.defaultIfNull(
+							Integer player2MatchCount = Utility.firstNonNull(
 									todaysMatchCounts.get(player2), 0);
 							score.MatchesPlayedToday = player1MatchCount
 									+ player2MatchCount;
 
-							score.PairedMatchesToday = Utility.defaultIfNull(
+							score.PairedMatchesToday = Utility.firstNonNull(
 									todaysPairedMatchCounts.get(pairing), 0);
 
-							score.PairedMatches = Utility.defaultIfNull(
+							score.PairedMatches = Utility.firstNonNull(
 									allPairedMatchCounts.get(pairing), 0);
 
 							score.IsRequested = vetoedOrSatisfied > 0;

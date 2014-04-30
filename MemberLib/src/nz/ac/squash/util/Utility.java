@@ -15,8 +15,13 @@ public class Utility {
 	public static final DateFormat SPREADSHEET_FORMATTER = new SimpleDateFormat(
 			"dd/MM/yyyy HH:mm:ss");
 
-	public static <T> T defaultIfNull(T object, T def) {
-		return object != null ? object : def;
+	@SafeVarargs
+	public static <T> T firstNonNull(T... objects) {
+		for (T t : objects) {
+			if (t != null)
+				return t;
+		}
+		return null;
 	}
 
 	public static <T> StackTraceElement getOuterTrace(Class<T> clazz) {

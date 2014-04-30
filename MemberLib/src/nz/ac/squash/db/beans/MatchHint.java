@@ -3,6 +3,7 @@ package nz.ac.squash.db.beans;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -17,7 +18,7 @@ import nz.ac.squash.db.DB;
 import nz.ac.squash.util.Utility;
 
 @Entity
-@Table(name="match_hints")
+@Table(name = "match_hints")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public abstract class MatchHint {
 	@Id
@@ -81,6 +82,11 @@ public abstract class MatchHint {
 			return false;
 
 		return ((MatchHint) obj).mID == mID;
+	}
+
+	public boolean isInEffect(MemberStatus player1Status,
+			MemberStatus player2Status) {
+		return true;
 	}
 
 	public abstract boolean vetosMatch(Member player1, Member player2);
