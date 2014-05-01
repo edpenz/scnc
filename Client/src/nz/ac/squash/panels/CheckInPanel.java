@@ -50,561 +50,558 @@ import nz.ac.squash.windows.RegisterWindow;
 import org.apache.commons.lang3.StringUtils;
 
 public class CheckInPanel extends JPanel {
-	private static final long serialVersionUID = 1L;
-
-	private JTextFieldPlus mSearchField;
-	private JList<Member> mResultsList;
-	private JPanel mButtonsPanel;
-	private JLabel mStep3Label;
-	private JLabel mStep2Label;
-	private JRadioButton mLevel1Radio;
-	private JRadioButton mLevel2Radio;
-	private JRadioButton mLevel3Radio;
-	private JRadioButton mLevel4Radio;
-	private ButtonGroup mSkillRadioGroup;
-	private JLabel label;
-	private JLabel lblLadder;
-	private JPanel mLadderGrid;
-
-	private static final ListModel<Member> EMPTY_RESULTS = new DefaultListModel<Member>();
-
-	private ExecutorService mSearchTask = new LatestExecutor();
-	private ActionListener mSkillButtonHandler = new ActionListener() {
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			enableMode();
-		}
-	};
-
-	private Member mSelectedMember = null;
-	private JButton playManualButton;
-
-	private final List<LadderEntry> mLadderEntries = new ArrayList<LadderEntry>();
-	private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
-	private JPanel mLadderPanel;
-
-	public CheckInPanel() {
-		createContents();
-
-		refreshLadder();
-	}
-
-	private void createContents() {
-		setOpaque(false);
-		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWidths = new int[] { 40, 0, 40, 0, 40, 0 };
-		gridBagLayout.rowHeights = new int[] { 20, 0, 0, 40 };
-		gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0,
-				Double.MIN_VALUE };
-		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 1.0, 0.0 };
-		setLayout(gridBagLayout);
-
-		label = new JLabel("Check-in to club night");
-		label.setForeground(Color.WHITE);
-		label.setFont(new Font("Tahoma", Font.PLAIN, 32));
-		GridBagConstraints gbc_label = new GridBagConstraints();
-		gbc_label.insets = new Insets(0, 20, 10, 20);
-		gbc_label.gridx = 1;
-		gbc_label.gridy = 1;
-		add(label, gbc_label);
-
-		lblLadder = new JLabel("Ladder");
-		lblLadder.setForeground(Color.WHITE);
-		lblLadder.setFont(new Font("Tahoma", Font.PLAIN, 32));
-		GridBagConstraints gbc_lblLadder = new GridBagConstraints();
-		gbc_lblLadder.insets = new Insets(0, 20, 10, 20);
-		gbc_lblLadder.gridx = 3;
-		gbc_lblLadder.gridy = 1;
-		add(lblLadder, gbc_lblLadder);
-
-		JPanel checkinPanel = new JPanel();
-		checkinPanel.setOpaque(false);
-		GridBagConstraints gbc_checkinPanel = new GridBagConstraints();
-		gbc_checkinPanel.fill = GridBagConstraints.BOTH;
-		gbc_checkinPanel.gridx = 1;
-		gbc_checkinPanel.gridy = 2;
-		add(checkinPanel, gbc_checkinPanel);
-		GridBagLayout gbl_checkinPanel = new GridBagLayout();
-		gbl_checkinPanel.columnWidths = new int[] { 0 };
-		gbl_checkinPanel.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
-		gbl_checkinPanel.columnWeights = new double[] { 1.0 };
-		gbl_checkinPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0,
-				0.0, 0.0, 1.0 };
-		checkinPanel.setLayout(gbl_checkinPanel);
-
-		JLabel lblSelectYour = new JLabel("1: Select your name below");
-		GridBagConstraints gbc_lblSelectYour = new GridBagConstraints();
-		gbc_lblSelectYour.insets = new Insets(5, 5, 5, 0);
-		gbc_lblSelectYour.anchor = GridBagConstraints.WEST;
-		gbc_lblSelectYour.gridx = 0;
-		gbc_lblSelectYour.gridy = 0;
-		checkinPanel.add(lblSelectYour, gbc_lblSelectYour);
-		lblSelectYour.setForeground(Color.WHITE);
-		lblSelectYour.setFont(new Font("Tahoma", Font.PLAIN, 16));
-
-		mSearchField = new JTextFieldPlus();
-		mSearchField.addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER
-						&& mSelectedMember != null) {
-					setMemberStatus(true, true);
-				}
-			}
-		});
-		GridBagConstraints gbc_mSearchField = new GridBagConstraints();
-		gbc_mSearchField.insets = new Insets(5, 5, 0, 5);
-		gbc_mSearchField.anchor = GridBagConstraints.NORTH;
-		gbc_mSearchField.fill = GridBagConstraints.HORIZONTAL;
-		gbc_mSearchField.gridx = 0;
-		gbc_mSearchField.gridy = 1;
-		checkinPanel.add(mSearchField, gbc_mSearchField);
-		mSearchField.getDocument().addDocumentListener(new DocumentListener() {
-			@Override
-			public void removeUpdate(DocumentEvent event) {
-				changedUpdate(event);
-			}
-
-			@Override
-			public void insertUpdate(DocumentEvent event) {
-				changedUpdate(event);
-			}
-
-			@Override
-			public void changedUpdate(DocumentEvent event) {
-				final String query = mSearchField.getText();
-
-				if (!StringUtils.isEmpty(query)) {
-					mSearchTask.execute(new Runnable() {
-						@Override
-						public void run() {
-							final MemberResults results = Member.searchMembers(
-									query, 5, 2, false);
-							SwingUtilities.invokeLater(new Runnable() {
-								@Override
-								public void run() {
-									mResultsList.setListData(results
-											.toArray(new Member[results.size()]));
-									mResultsList.setEnabled(true);
-
-									if (results.hasUniqueMatch())
-										mResultsList.setSelectedIndex(0);
-								}
-							});
-						}
-					});
-				} else {
-					mResultsList.setEnabled(false);
-					mResultsList.setModel(EMPTY_RESULTS);
-				}
-			}
-		});
-		mSearchField.setPlaceholder("type your name to search");
-		mSearchField.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		mSearchField.setColumns(10);
-
-		mStep2Label = new JLabel("2: Specify your skill level");
-		GridBagConstraints gbc_mStep2Label = new GridBagConstraints();
-		gbc_mStep2Label.anchor = GridBagConstraints.WEST;
-		gbc_mStep2Label.insets = new Insets(5, 5, 5, 0);
-		gbc_mStep2Label.gridx = 0;
-		gbc_mStep2Label.gridy = 4;
-		checkinPanel.add(mStep2Label, gbc_mStep2Label);
-		mStep2Label.setForeground(Color.LIGHT_GRAY);
-		mStep2Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
-
-		JPanel panel_1 = new JPanel();
-		GridBagConstraints gbc_panel_1 = new GridBagConstraints();
-		gbc_panel_1.insets = new Insets(5, 5, 5, 5);
-		gbc_panel_1.fill = GridBagConstraints.BOTH;
-		gbc_panel_1.gridx = 0;
-		gbc_panel_1.gridy = 5;
-		checkinPanel.add(panel_1, gbc_panel_1);
-		panel_1.setOpaque(false);
-		panel_1.setLayout(new GridLayout(0, 1, 0, 0));
-
-		mLevel1Radio = new JRadioButton("Graded/advanced");
-		mLevel1Radio.addActionListener(mSkillButtonHandler);
-		mLevel1Radio.setEnabled(false);
-		mLevel1Radio.setOpaque(false);
-		panel_1.add(mLevel1Radio);
-
-		mLevel2Radio = new JRadioButton("Intermediate");
-		mLevel2Radio.addActionListener(mSkillButtonHandler);
-		mLevel2Radio.setEnabled(false);
-		mLevel2Radio.setOpaque(false);
-		panel_1.add(mLevel2Radio);
-
-		mLevel3Radio = new JRadioButton("Beginner");
-		mLevel3Radio.addActionListener(mSkillButtonHandler);
-		mLevel3Radio.setEnabled(false);
-		mLevel3Radio.setOpaque(false);
-		panel_1.add(mLevel3Radio);
-
-		mLevel4Radio = new JRadioButton("Never played");
-		mLevel4Radio.addActionListener(mSkillButtonHandler);
-		mLevel4Radio.setEnabled(false);
-		mLevel4Radio.setOpaque(false);
-		panel_1.add(mLevel4Radio);
-
-		mSkillRadioGroup = new ButtonGroup();
-		mSkillRadioGroup.add(mLevel1Radio);
-		mSkillRadioGroup.add(mLevel2Radio);
-		mSkillRadioGroup.add(mLevel3Radio);
-		mSkillRadioGroup.add(mLevel4Radio);
-
-		mResultsList = new JList<Member>();
-		mResultsList.setPreferredSize(new Dimension(0, 120));
-		GridBagConstraints gbc_mResultsList = new GridBagConstraints();
-		gbc_mResultsList.insets = new Insets(0, 5, 0, 5);
-		gbc_mResultsList.fill = GridBagConstraints.BOTH;
-		gbc_mResultsList.gridx = 0;
-		gbc_mResultsList.gridy = 2;
-		checkinPanel.add(mResultsList, gbc_mResultsList);
-		mResultsList.addListSelectionListener(new ListSelectionListener() {
-			public void valueChanged(ListSelectionEvent event) {
-				selectMember(mResultsList.getSelectedValue());
-			}
-		});
-		mResultsList.setEnabled(false);
-		mResultsList.setModel(EMPTY_RESULTS);
-		mResultsList.setFont(new Font("Tahoma", Font.PLAIN, 16));
-
-		JButton registerButton = new JButton("Not found? Click to register");
-		GridBagConstraints gbc_registerButton = new GridBagConstraints();
-		gbc_registerButton.insets = new Insets(5, 5, 5, 5);
-		gbc_registerButton.fill = GridBagConstraints.HORIZONTAL;
-		gbc_registerButton.gridx = 0;
-		gbc_registerButton.gridy = 3;
-		checkinPanel.add(registerButton, gbc_registerButton);
-		registerButton.setOpaque(false);
-		registerButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				showRegistration();
-			}
-		});
-		registerButton.setFont(new Font("Tahoma", Font.PLAIN, 14));
-
-		mStep3Label = new JLabel("3: Choose how you want to play tonight");
-		GridBagConstraints gbc_mStep3Label = new GridBagConstraints();
-		gbc_mStep3Label.anchor = GridBagConstraints.WEST;
-		gbc_mStep3Label.insets = new Insets(5, 5, 5, 0);
-		gbc_mStep3Label.gridx = 0;
-		gbc_mStep3Label.gridy = 6;
-		checkinPanel.add(mStep3Label, gbc_mStep3Label);
-		mStep3Label.setForeground(Color.LIGHT_GRAY);
-		mStep3Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
-
-		mButtonsPanel = new JPanel();
-		GridBagConstraints gbc_mButtonsPanel = new GridBagConstraints();
-		gbc_mButtonsPanel.insets = new Insets(5, 5, 5, 5);
-		gbc_mButtonsPanel.fill = GridBagConstraints.BOTH;
-		gbc_mButtonsPanel.gridx = 0;
-		gbc_mButtonsPanel.gridy = 7;
-		checkinPanel.add(mButtonsPanel, gbc_mButtonsPanel);
-		mButtonsPanel.setOpaque(false);
-		mButtonsPanel.setLayout(new GridLayout(0, 1, 0, 5));
-
-		JButton playFullButton = new JButton("Participate in the ladder");
-		playFullButton.setOpaque(false);
-		playFullButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				setMemberStatus(true, true);
-			}
-		});
-		playFullButton.setEnabled(false);
-		mButtonsPanel.add(playFullButton);
-
-		playManualButton = new JButton("Just training and/or King of the Court");
-		playManualButton.setOpaque(false);
-		playManualButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				setMemberStatus(false, true);
-			}
-		});
-		playManualButton.setEnabled(false);
-		mButtonsPanel.add(playManualButton);
-
-		JButton playNoneButton = new JButton("I'm finished for today");
-		playNoneButton.setOpaque(false);
-		playNoneButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				setMemberStatus(false, false);
-			}
-		});
-		playNoneButton.setEnabled(false);
-		mButtonsPanel.add(playNoneButton);
-
-		JPanel panel2 = new JPanel();
-		GridBagConstraints gbc_panel2 = new GridBagConstraints();
-		gbc_panel2.fill = GridBagConstraints.BOTH;
-		gbc_panel2.gridheight = 3;
-		gbc_panel2.gridx = 0;
-		gbc_panel2.gridy = 1;
-		checkinPanel.add(panel2, gbc_panel2);
-		panel2.setBackground(Color.WHITE);
-
-		JPanel panel_2 = new JPanel();
-		panel_2.setBackground(Color.WHITE);
-		GridBagConstraints gbc_panel_2 = new GridBagConstraints();
-		gbc_panel_2.fill = GridBagConstraints.BOTH;
-		gbc_panel_2.gridx = 0;
-		gbc_panel_2.gridy = 5;
-		checkinPanel.add(panel_2, gbc_panel_2);
-
-		JPanel panel_3 = new JPanel();
-		panel_3.setBackground(Color.WHITE);
-		GridBagConstraints gbc_panel_3 = new GridBagConstraints();
-		gbc_panel_3.fill = GridBagConstraints.BOTH;
-		gbc_panel_3.gridx = 0;
-		gbc_panel_3.gridy = 7;
-		checkinPanel.add(panel_3, gbc_panel_3);
-
-		JPanel panel_4 = new JPanel();
-		panel_4.setBackground(Color.decode("#0065B3"));
-		GridBagConstraints gbc_panel_4 = new GridBagConstraints();
-		gbc_panel_4.fill = GridBagConstraints.BOTH;
-		gbc_panel_4.gridx = 0;
-		gbc_panel_4.gridy = 0;
-		checkinPanel.add(panel_4, gbc_panel_4);
-
-		JPanel panel_5 = new JPanel();
-		panel_5.setBackground(Color.decode("#0065B3"));
-		GridBagConstraints gbc_panel_5 = new GridBagConstraints();
-		gbc_panel_5.fill = GridBagConstraints.BOTH;
-		gbc_panel_5.gridx = 0;
-		gbc_panel_5.gridy = 4;
-		checkinPanel.add(panel_5, gbc_panel_5);
-
-		JPanel panel_6 = new JPanel();
-		panel_6.setBackground(Color.decode("#0065B3"));
-		GridBagConstraints gbc_panel_6 = new GridBagConstraints();
-		gbc_panel_6.fill = GridBagConstraints.BOTH;
-		gbc_panel_6.gridx = 0;
-		gbc_panel_6.gridy = 6;
-		checkinPanel.add(panel_6, gbc_panel_6);
-
-		mLadderPanel = new JPanel();
-		mLadderPanel.setBackground(Color.decode("#0065B3"));
-		GridBagConstraints gbc_mLadderPanel = new GridBagConstraints();
-		gbc_mLadderPanel.fill = GridBagConstraints.BOTH;
-		gbc_mLadderPanel.gridx = 3;
-		gbc_mLadderPanel.gridy = 2;
-		add(mLadderPanel, gbc_mLadderPanel);
-		GridBagLayout gbl_mLadderPanel = new GridBagLayout();
-		gbl_mLadderPanel.columnWidths = new int[] { 378, 0 };
-		gbl_mLadderPanel.rowHeights = new int[] { 363, 0 };
-		gbl_mLadderPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-		gbl_mLadderPanel.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
-		mLadderPanel.setLayout(gbl_mLadderPanel);
-
-		mLadderGrid = new JPanel();
-		GridBagConstraints gbc_mLadderGrid = new GridBagConstraints();
-		gbc_mLadderGrid.insets = new Insets(5, 0, 5, 0);
-		gbc_mLadderGrid.fill = GridBagConstraints.BOTH;
-		gbc_mLadderGrid.gridx = 0;
-		gbc_mLadderGrid.gridy = 0;
-		mLadderPanel.add(mLadderGrid, gbc_mLadderGrid);
-		mLadderGrid.setOpaque(false);
-		GridBagLayout gbl_mLadderGrid = new GridBagLayout();
-		gbl_mLadderGrid.columnWidths = new int[] { 0 };
-		gbl_mLadderGrid.rowHeights = new int[] { 0 };
-		gbl_mLadderGrid.columnWeights = new double[] { Double.MIN_VALUE };
-		gbl_mLadderGrid.rowWeights = new double[] { Double.MIN_VALUE };
-		mLadderGrid.setLayout(gbl_mLadderGrid);
-	}
-
-	private String getSkillLevel() {
-		if (mLevel1Radio.isSelected())
-			return "1";
-		else if (mLevel2Radio.isSelected())
-			return "2";
-		else if (mLevel3Radio.isSelected())
-			return "3";
-		else if (mLevel4Radio.isSelected())
-			return "4";
-		else
-			return "";
-	}
-
-	public void resetSearch() {
-		mSearchField.setText(null);
-		mResultsList.setEnabled(false);
-		mResultsList.setModel(EMPTY_RESULTS);
-
-		disableSkill();
-		disableMode();
-
-		mSearchField.grabFocus();
-	}
-
-	private void selectMember(Member member) {
-		mSelectedMember = member;
-
-		if (mSelectedMember != null) {
-			enableSkill();
-		} else {
-			disableSkill();
-			disableMode();
-		}
-	}
-
-	private void enableSkill() {
-		// Enable UI widgets.
-		mStep2Label.setForeground(Color.white);
-
-		mLevel1Radio.setEnabled(true);
-		mLevel2Radio.setEnabled(true);
-		mLevel3Radio.setEnabled(true);
-		mLevel4Radio.setEnabled(true);
-
-		// Find their latest skill level.
-		String skillLevel = new MemberStatus(mSelectedMember).getSkillLevel();
-
-		// Preselect most recent skill level.
-		if (StringUtils.isEmpty(skillLevel)) {
-			mSkillRadioGroup.clearSelection();
-			disableMode();
-		} else if (StringUtils.equals(skillLevel, "4")) {
-			mLevel4Radio.setSelected(true);
-			enableMode();
-		} else if (StringUtils.equals(skillLevel, "3")) {
-			mLevel3Radio.setSelected(true);
-			enableMode();
-		} else if (StringUtils.equals(skillLevel, "2")) {
-			mLevel2Radio.setSelected(true);
-			enableMode();
-		} else {
-			mLevel1Radio.setSelected(true);
-			enableMode();
-		}
-	}
-
-	private void disableSkill() {
-		mStep2Label.setForeground(Color.lightGray);
-
-		mLevel1Radio.setEnabled(false);
-		mLevel2Radio.setEnabled(false);
-		mLevel3Radio.setEnabled(false);
-		mLevel4Radio.setEnabled(false);
-
-		mSkillRadioGroup.clearSelection();
-	}
-
-	private void enableMode() {
-		mStep3Label.setForeground(Color.white);
-
-		for (Component child : mButtonsPanel.getComponents()) {
-			child.setEnabled(true);
-		}
-	}
-
-	private void disableMode() {
-		mStep3Label.setForeground(Color.lightGray);
-
-		for (Component child : mButtonsPanel.getComponents()) {
-			child.setEnabled(false);
-		}
-	}
-
-	private void setMemberStatus(final boolean playGames, final boolean present) {
-		DB.executeTransaction(new Transaction() {
-			@Override
-			public void run() {
-				MemberStatus newStatus = new MemberStatus(mSelectedMember,
-						getSkillLevel(), present, playGames);
-				update(newStatus);
-
-				MatchResult.addToLadder(mSelectedMember);
-			}
-		});
-
-		// Update ladder.
-		if (mLadderMapping.containsKey(mSelectedMember)) {
-			mLadderMapping.get(mSelectedMember).setPresent(present);
-		} else {
-			refreshLadder();
-		}
-
-		// Clear check-in input widgets.
-		resetSearch();
-	}
-
-	private void showRegistration() {
-		RegisterWindow.showDialog(this, new RegisterWindow.Callback() {
-			@Override
-			public void memberRegistered(Member member) {
-				CheckInPanel.this.memberRegistered(member);
-			}
-		});
-	}
-
-	private void memberRegistered(Member member) {
-		mSearchField.setText(member.getName());
-	}
-
-	public void refreshLadder() {
-		mLadderEntries.clear();
-		mLadderMapping.clear();
-
-		DB.queueTransaction(new Transaction() {
-			@Override
-			public void run() {
-				final Date today = Utility.stripTime(new Date());
-
-				int i = 0;
-				for (final Member member : MatchResult.getLadder()) {
-					// Get status of member.
-					MemberStatus todaysStatus = Utility
-							.first(query(
-									MemberStatus.class,
-									"s where mDate >= ?0 and mMember = ?1 order by mDate desc",
-									today, member));
-					boolean present = todaysStatus != null
-							&& todaysStatus.isPresent();
-
-					// Create UI entry.
-					LadderEntry entry = new LadderEntry(i + 1, member, present);
-					entry.addMouseListener(new MouseAdapter() {
-						@Override
-						public void mouseReleased(MouseEvent e) {
-							mSearchField.setText(member.getNameFormatted());
-							selectMember(member);
-						}
-					});
-
-					// Add to internal lists.
-					mLadderEntries.add(entry);
-					mLadderMapping.put(member, entry);
-
-					i++;
-				}
-
-				// Add entries to UI on swing thread.
-				SwingUtilities.invokeLater(new Runnable() {
-					@Override
-					public void run() {
-						mLadderGrid.removeAll();
-
-						int i = 0;
-						for (LadderEntry entry : mLadderEntries) {
-							GridBagConstraints gbc = new GridBagConstraints();
-							gbc.gridx = i / 21;
-							gbc.gridy = i % 21;
-							gbc.fill = GridBagConstraints.BOTH;
-							gbc.weightx = 1.f;
-							gbc.weighty = 1.f;
-							gbc.insets.set(0, 5, 0, 5);
-							mLadderGrid.add(entry, gbc);
-
-							i++;
-						}
-
-						mLadderGrid.revalidate();
-						mLadderPanel.repaint();
-					}
-				});
-			}
-		});
-	}
+    private static final long serialVersionUID = 1L;
+
+    private JTextFieldPlus mSearchField;
+    private JList<Member> mResultsList;
+    private JPanel mButtonsPanel;
+    private JLabel mStep3Label;
+    private JLabel mStep2Label;
+    private JRadioButton mLevel1Radio;
+    private JRadioButton mLevel2Radio;
+    private JRadioButton mLevel3Radio;
+    private JRadioButton mLevel4Radio;
+    private ButtonGroup mSkillRadioGroup;
+    private JLabel label;
+    private JLabel lblLadder;
+    private JPanel mLadderGrid;
+
+    private static final ListModel<Member> EMPTY_RESULTS = new DefaultListModel<Member>();
+
+    private ExecutorService mSearchTask = new LatestExecutor();
+    private ActionListener mSkillButtonHandler = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            enableMode();
+        }
+    };
+
+    private Member mSelectedMember = null;
+    private JButton playManualButton;
+
+    private final List<LadderEntry> mLadderEntries = new ArrayList<LadderEntry>();
+    private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
+    private JPanel mLadderPanel;
+
+    public CheckInPanel() {
+        createContents();
+
+        refreshLadder();
+    }
+
+    private void createContents() {
+        setOpaque(false);
+        GridBagLayout gridBagLayout = new GridBagLayout();
+        gridBagLayout.columnWidths = new int[] { 40, 0, 40, 0, 40, 0 };
+        gridBagLayout.rowHeights = new int[] { 20, 0, 0, 40 };
+        gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0,
+                Double.MIN_VALUE };
+        gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 1.0, 0.0 };
+        setLayout(gridBagLayout);
+
+        label = new JLabel("Check-in to club night");
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Tahoma", Font.PLAIN, 32));
+        GridBagConstraints gbc_label = new GridBagConstraints();
+        gbc_label.insets = new Insets(0, 20, 10, 20);
+        gbc_label.gridx = 1;
+        gbc_label.gridy = 1;
+        add(label, gbc_label);
+
+        lblLadder = new JLabel("Ladder");
+        lblLadder.setForeground(Color.WHITE);
+        lblLadder.setFont(new Font("Tahoma", Font.PLAIN, 32));
+        GridBagConstraints gbc_lblLadder = new GridBagConstraints();
+        gbc_lblLadder.insets = new Insets(0, 20, 10, 20);
+        gbc_lblLadder.gridx = 3;
+        gbc_lblLadder.gridy = 1;
+        add(lblLadder, gbc_lblLadder);
+
+        JPanel checkinPanel = new JPanel();
+        checkinPanel.setOpaque(false);
+        GridBagConstraints gbc_checkinPanel = new GridBagConstraints();
+        gbc_checkinPanel.fill = GridBagConstraints.BOTH;
+        gbc_checkinPanel.gridx = 1;
+        gbc_checkinPanel.gridy = 2;
+        add(checkinPanel, gbc_checkinPanel);
+        GridBagLayout gbl_checkinPanel = new GridBagLayout();
+        gbl_checkinPanel.columnWidths = new int[] { 0 };
+        gbl_checkinPanel.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
+        gbl_checkinPanel.columnWeights = new double[] { 1.0 };
+        gbl_checkinPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 1.0 };
+        checkinPanel.setLayout(gbl_checkinPanel);
+
+        JLabel lblSelectYour = new JLabel("1: Select your name below");
+        GridBagConstraints gbc_lblSelectYour = new GridBagConstraints();
+        gbc_lblSelectYour.insets = new Insets(5, 5, 5, 0);
+        gbc_lblSelectYour.anchor = GridBagConstraints.WEST;
+        gbc_lblSelectYour.gridx = 0;
+        gbc_lblSelectYour.gridy = 0;
+        checkinPanel.add(lblSelectYour, gbc_lblSelectYour);
+        lblSelectYour.setForeground(Color.WHITE);
+        lblSelectYour.setFont(new Font("Tahoma", Font.PLAIN, 16));
+
+        mSearchField = new JTextFieldPlus();
+        mSearchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER &&
+                    mSelectedMember != null) {
+                    setMemberStatus(true, true);
+                }
+            }
+        });
+        GridBagConstraints gbc_mSearchField = new GridBagConstraints();
+        gbc_mSearchField.insets = new Insets(5, 5, 0, 5);
+        gbc_mSearchField.anchor = GridBagConstraints.NORTH;
+        gbc_mSearchField.fill = GridBagConstraints.HORIZONTAL;
+        gbc_mSearchField.gridx = 0;
+        gbc_mSearchField.gridy = 1;
+        checkinPanel.add(mSearchField, gbc_mSearchField);
+        mSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void removeUpdate(DocumentEvent event) {
+                changedUpdate(event);
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent event) {
+                changedUpdate(event);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent event) {
+                final String query = mSearchField.getText();
+
+                if (!StringUtils.isEmpty(query)) {
+                    mSearchTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            final MemberResults results = Member.searchMembers(
+                                    query, 5, 2, false);
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mResultsList.setListData(results
+                                            .toArray(new Member[results.size()]));
+                                    mResultsList.setEnabled(true);
+
+                                    if (results.hasUniqueMatch()) mResultsList
+                                            .setSelectedIndex(0);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    mResultsList.setEnabled(false);
+                    mResultsList.setModel(EMPTY_RESULTS);
+                }
+            }
+        });
+        mSearchField.setPlaceholder("type your name to search");
+        mSearchField.setFont(new Font("Tahoma", Font.PLAIN, 16));
+        mSearchField.setColumns(10);
+
+        mStep2Label = new JLabel("2: Specify your skill level");
+        GridBagConstraints gbc_mStep2Label = new GridBagConstraints();
+        gbc_mStep2Label.anchor = GridBagConstraints.WEST;
+        gbc_mStep2Label.insets = new Insets(5, 5, 5, 0);
+        gbc_mStep2Label.gridx = 0;
+        gbc_mStep2Label.gridy = 4;
+        checkinPanel.add(mStep2Label, gbc_mStep2Label);
+        mStep2Label.setForeground(Color.LIGHT_GRAY);
+        mStep2Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
+
+        JPanel panel_1 = new JPanel();
+        GridBagConstraints gbc_panel_1 = new GridBagConstraints();
+        gbc_panel_1.insets = new Insets(5, 5, 5, 5);
+        gbc_panel_1.fill = GridBagConstraints.BOTH;
+        gbc_panel_1.gridx = 0;
+        gbc_panel_1.gridy = 5;
+        checkinPanel.add(panel_1, gbc_panel_1);
+        panel_1.setOpaque(false);
+        panel_1.setLayout(new GridLayout(0, 1, 0, 0));
+
+        mLevel1Radio = new JRadioButton("Graded/advanced");
+        mLevel1Radio.addActionListener(mSkillButtonHandler);
+        mLevel1Radio.setEnabled(false);
+        mLevel1Radio.setOpaque(false);
+        panel_1.add(mLevel1Radio);
+
+        mLevel2Radio = new JRadioButton("Intermediate");
+        mLevel2Radio.addActionListener(mSkillButtonHandler);
+        mLevel2Radio.setEnabled(false);
+        mLevel2Radio.setOpaque(false);
+        panel_1.add(mLevel2Radio);
+
+        mLevel3Radio = new JRadioButton("Beginner");
+        mLevel3Radio.addActionListener(mSkillButtonHandler);
+        mLevel3Radio.setEnabled(false);
+        mLevel3Radio.setOpaque(false);
+        panel_1.add(mLevel3Radio);
+
+        mLevel4Radio = new JRadioButton("Never played");
+        mLevel4Radio.addActionListener(mSkillButtonHandler);
+        mLevel4Radio.setEnabled(false);
+        mLevel4Radio.setOpaque(false);
+        panel_1.add(mLevel4Radio);
+
+        mSkillRadioGroup = new ButtonGroup();
+        mSkillRadioGroup.add(mLevel1Radio);
+        mSkillRadioGroup.add(mLevel2Radio);
+        mSkillRadioGroup.add(mLevel3Radio);
+        mSkillRadioGroup.add(mLevel4Radio);
+
+        mResultsList = new JList<Member>();
+        mResultsList.setPreferredSize(new Dimension(0, 120));
+        GridBagConstraints gbc_mResultsList = new GridBagConstraints();
+        gbc_mResultsList.insets = new Insets(0, 5, 0, 5);
+        gbc_mResultsList.fill = GridBagConstraints.BOTH;
+        gbc_mResultsList.gridx = 0;
+        gbc_mResultsList.gridy = 2;
+        checkinPanel.add(mResultsList, gbc_mResultsList);
+        mResultsList.addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent event) {
+                selectMember(mResultsList.getSelectedValue());
+            }
+        });
+        mResultsList.setEnabled(false);
+        mResultsList.setModel(EMPTY_RESULTS);
+        mResultsList.setFont(new Font("Tahoma", Font.PLAIN, 16));
+
+        JButton registerButton = new JButton("Not found? Click to register");
+        GridBagConstraints gbc_registerButton = new GridBagConstraints();
+        gbc_registerButton.insets = new Insets(5, 5, 5, 5);
+        gbc_registerButton.fill = GridBagConstraints.HORIZONTAL;
+        gbc_registerButton.gridx = 0;
+        gbc_registerButton.gridy = 3;
+        checkinPanel.add(registerButton, gbc_registerButton);
+        registerButton.setOpaque(false);
+        registerButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showRegistration();
+            }
+        });
+        registerButton.setFont(new Font("Tahoma", Font.PLAIN, 14));
+
+        mStep3Label = new JLabel("3: Choose how you want to play tonight");
+        GridBagConstraints gbc_mStep3Label = new GridBagConstraints();
+        gbc_mStep3Label.anchor = GridBagConstraints.WEST;
+        gbc_mStep3Label.insets = new Insets(5, 5, 5, 0);
+        gbc_mStep3Label.gridx = 0;
+        gbc_mStep3Label.gridy = 6;
+        checkinPanel.add(mStep3Label, gbc_mStep3Label);
+        mStep3Label.setForeground(Color.LIGHT_GRAY);
+        mStep3Label.setFont(new Font("Tahoma", Font.PLAIN, 16));
+
+        mButtonsPanel = new JPanel();
+        GridBagConstraints gbc_mButtonsPanel = new GridBagConstraints();
+        gbc_mButtonsPanel.insets = new Insets(5, 5, 5, 5);
+        gbc_mButtonsPanel.fill = GridBagConstraints.BOTH;
+        gbc_mButtonsPanel.gridx = 0;
+        gbc_mButtonsPanel.gridy = 7;
+        checkinPanel.add(mButtonsPanel, gbc_mButtonsPanel);
+        mButtonsPanel.setOpaque(false);
+        mButtonsPanel.setLayout(new GridLayout(0, 1, 0, 5));
+
+        JButton playFullButton = new JButton("Participate in the ladder");
+        playFullButton.setOpaque(false);
+        playFullButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                setMemberStatus(true, true);
+            }
+        });
+        playFullButton.setEnabled(false);
+        mButtonsPanel.add(playFullButton);
+
+        playManualButton = new JButton("Just training and/or King of the Court");
+        playManualButton.setOpaque(false);
+        playManualButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setMemberStatus(false, true);
+            }
+        });
+        playManualButton.setEnabled(false);
+        mButtonsPanel.add(playManualButton);
+
+        JButton playNoneButton = new JButton("I'm finished for today");
+        playNoneButton.setOpaque(false);
+        playNoneButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setMemberStatus(false, false);
+            }
+        });
+        playNoneButton.setEnabled(false);
+        mButtonsPanel.add(playNoneButton);
+
+        JPanel panel2 = new JPanel();
+        GridBagConstraints gbc_panel2 = new GridBagConstraints();
+        gbc_panel2.fill = GridBagConstraints.BOTH;
+        gbc_panel2.gridheight = 3;
+        gbc_panel2.gridx = 0;
+        gbc_panel2.gridy = 1;
+        checkinPanel.add(panel2, gbc_panel2);
+        panel2.setBackground(Color.WHITE);
+
+        JPanel panel_2 = new JPanel();
+        panel_2.setBackground(Color.WHITE);
+        GridBagConstraints gbc_panel_2 = new GridBagConstraints();
+        gbc_panel_2.fill = GridBagConstraints.BOTH;
+        gbc_panel_2.gridx = 0;
+        gbc_panel_2.gridy = 5;
+        checkinPanel.add(panel_2, gbc_panel_2);
+
+        JPanel panel_3 = new JPanel();
+        panel_3.setBackground(Color.WHITE);
+        GridBagConstraints gbc_panel_3 = new GridBagConstraints();
+        gbc_panel_3.fill = GridBagConstraints.BOTH;
+        gbc_panel_3.gridx = 0;
+        gbc_panel_3.gridy = 7;
+        checkinPanel.add(panel_3, gbc_panel_3);
+
+        JPanel panel_4 = new JPanel();
+        panel_4.setBackground(Color.decode("#0065B3"));
+        GridBagConstraints gbc_panel_4 = new GridBagConstraints();
+        gbc_panel_4.fill = GridBagConstraints.BOTH;
+        gbc_panel_4.gridx = 0;
+        gbc_panel_4.gridy = 0;
+        checkinPanel.add(panel_4, gbc_panel_4);
+
+        JPanel panel_5 = new JPanel();
+        panel_5.setBackground(Color.decode("#0065B3"));
+        GridBagConstraints gbc_panel_5 = new GridBagConstraints();
+        gbc_panel_5.fill = GridBagConstraints.BOTH;
+        gbc_panel_5.gridx = 0;
+        gbc_panel_5.gridy = 4;
+        checkinPanel.add(panel_5, gbc_panel_5);
+
+        JPanel panel_6 = new JPanel();
+        panel_6.setBackground(Color.decode("#0065B3"));
+        GridBagConstraints gbc_panel_6 = new GridBagConstraints();
+        gbc_panel_6.fill = GridBagConstraints.BOTH;
+        gbc_panel_6.gridx = 0;
+        gbc_panel_6.gridy = 6;
+        checkinPanel.add(panel_6, gbc_panel_6);
+
+        mLadderPanel = new JPanel();
+        mLadderPanel.setBackground(Color.decode("#0065B3"));
+        GridBagConstraints gbc_mLadderPanel = new GridBagConstraints();
+        gbc_mLadderPanel.fill = GridBagConstraints.BOTH;
+        gbc_mLadderPanel.gridx = 3;
+        gbc_mLadderPanel.gridy = 2;
+        add(mLadderPanel, gbc_mLadderPanel);
+        GridBagLayout gbl_mLadderPanel = new GridBagLayout();
+        gbl_mLadderPanel.columnWidths = new int[] { 378, 0 };
+        gbl_mLadderPanel.rowHeights = new int[] { 363, 0 };
+        gbl_mLadderPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+        gbl_mLadderPanel.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
+        mLadderPanel.setLayout(gbl_mLadderPanel);
+
+        mLadderGrid = new JPanel();
+        GridBagConstraints gbc_mLadderGrid = new GridBagConstraints();
+        gbc_mLadderGrid.insets = new Insets(5, 0, 5, 0);
+        gbc_mLadderGrid.fill = GridBagConstraints.BOTH;
+        gbc_mLadderGrid.gridx = 0;
+        gbc_mLadderGrid.gridy = 0;
+        mLadderPanel.add(mLadderGrid, gbc_mLadderGrid);
+        mLadderGrid.setOpaque(false);
+        GridBagLayout gbl_mLadderGrid = new GridBagLayout();
+        gbl_mLadderGrid.columnWidths = new int[] { 0 };
+        gbl_mLadderGrid.rowHeights = new int[] { 0 };
+        gbl_mLadderGrid.columnWeights = new double[] { Double.MIN_VALUE };
+        gbl_mLadderGrid.rowWeights = new double[] { Double.MIN_VALUE };
+        mLadderGrid.setLayout(gbl_mLadderGrid);
+    }
+
+    private String getSkillLevel() {
+        if (mLevel1Radio.isSelected()) return "1";
+        else if (mLevel2Radio.isSelected()) return "2";
+        else if (mLevel3Radio.isSelected()) return "3";
+        else if (mLevel4Radio.isSelected()) return "4";
+        else return "";
+    }
+
+    public void resetSearch() {
+        mSearchField.setText(null);
+        mResultsList.setEnabled(false);
+        mResultsList.setModel(EMPTY_RESULTS);
+
+        disableSkill();
+        disableMode();
+
+        mSearchField.grabFocus();
+    }
+
+    private void selectMember(Member member) {
+        mSelectedMember = member;
+
+        if (mSelectedMember != null) {
+            enableSkill();
+        } else {
+            disableSkill();
+            disableMode();
+        }
+    }
+
+    private void enableSkill() {
+        // Enable UI widgets.
+        mStep2Label.setForeground(Color.white);
+
+        mLevel1Radio.setEnabled(true);
+        mLevel2Radio.setEnabled(true);
+        mLevel3Radio.setEnabled(true);
+        mLevel4Radio.setEnabled(true);
+
+        // Find their latest skill level.
+        String skillLevel = new MemberStatus(mSelectedMember).getSkillLevel();
+
+        // Preselect most recent skill level.
+        if (StringUtils.isEmpty(skillLevel)) {
+            mSkillRadioGroup.clearSelection();
+            disableMode();
+        } else if (StringUtils.equals(skillLevel, "4")) {
+            mLevel4Radio.setSelected(true);
+            enableMode();
+        } else if (StringUtils.equals(skillLevel, "3")) {
+            mLevel3Radio.setSelected(true);
+            enableMode();
+        } else if (StringUtils.equals(skillLevel, "2")) {
+            mLevel2Radio.setSelected(true);
+            enableMode();
+        } else {
+            mLevel1Radio.setSelected(true);
+            enableMode();
+        }
+    }
+
+    private void disableSkill() {
+        mStep2Label.setForeground(Color.lightGray);
+
+        mLevel1Radio.setEnabled(false);
+        mLevel2Radio.setEnabled(false);
+        mLevel3Radio.setEnabled(false);
+        mLevel4Radio.setEnabled(false);
+
+        mSkillRadioGroup.clearSelection();
+    }
+
+    private void enableMode() {
+        mStep3Label.setForeground(Color.white);
+
+        for (Component child : mButtonsPanel.getComponents()) {
+            child.setEnabled(true);
+        }
+    }
+
+    private void disableMode() {
+        mStep3Label.setForeground(Color.lightGray);
+
+        for (Component child : mButtonsPanel.getComponents()) {
+            child.setEnabled(false);
+        }
+    }
+
+    private void setMemberStatus(final boolean playGames, final boolean present) {
+        DB.executeTransaction(new Transaction() {
+            @Override
+            public void run() {
+                MemberStatus newStatus = new MemberStatus(mSelectedMember,
+                        getSkillLevel(), present, playGames);
+                update(newStatus);
+
+                MatchResult.addToLadder(mSelectedMember);
+            }
+        });
+
+        // Update ladder.
+        if (mLadderMapping.containsKey(mSelectedMember)) {
+            LadderEntry entry = mLadderMapping.get(mSelectedMember);
+            entry.setPresent(present);
+            entry.flash();
+        } else {
+            refreshLadder();
+        }
+
+        // Clear check-in input widgets.
+        resetSearch();
+    }
+
+    private void showRegistration() {
+        RegisterWindow.showDialog(this, new RegisterWindow.Callback() {
+            @Override
+            public void memberRegistered(Member member) {
+                CheckInPanel.this.memberRegistered(member);
+            }
+        });
+    }
+
+    private void memberRegistered(Member member) {
+        mSearchField.setText(member.getName());
+    }
+
+    public void refreshLadder() {
+        mLadderEntries.clear();
+        mLadderMapping.clear();
+
+        DB.queueTransaction(new Transaction() {
+            @Override
+            public void run() {
+                final Date today = Utility.stripTime(new Date());
+
+                int i = 0;
+                for (final Member member : MatchResult.getLadder()) {
+                    // Get status of member.
+                    MemberStatus todaysStatus = Utility
+                            .first(query(
+                                    MemberStatus.class,
+                                    "s where mDate >= ?0 and mMember = ?1 order by mDate desc",
+                                    today, member));
+                    boolean present = todaysStatus != null &&
+                                      todaysStatus.isPresent();
+
+                    // Create UI entry.
+                    LadderEntry entry = new LadderEntry(i + 1, member, present);
+                    entry.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseReleased(MouseEvent e) {
+                            mSearchField.setText(member.getNameFormatted());
+                            selectMember(member);
+                        }
+                    });
+
+                    // Add to internal lists.
+                    mLadderEntries.add(entry);
+                    mLadderMapping.put(member, entry);
+
+                    i++;
+                }
+
+                // Add entries to UI on swing thread.
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        mLadderGrid.removeAll();
+
+                        int i = 0;
+                        for (LadderEntry entry : mLadderEntries) {
+                            GridBagConstraints gbc = new GridBagConstraints();
+                            gbc.gridx = i / 21;
+                            gbc.gridy = i % 21;
+                            gbc.fill = GridBagConstraints.BOTH;
+                            gbc.weightx = 1.f;
+                            gbc.weighty = 1.f;
+                            gbc.insets.set(0, 5, 0, 5);
+                            mLadderGrid.add(entry, gbc);
+
+                            i++;
+                        }
+
+                        mLadderGrid.revalidate();
+                        mLadderPanel.repaint();
+                    }
+                });
+            }
+        });
+    }
 }

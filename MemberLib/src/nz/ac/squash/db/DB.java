@@ -16,216 +16,222 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 
 public class DB {
-	private static Logger sLogger = Logger.getLogger(DB.class);
+    private static Logger sLogger = Logger.getLogger(DB.class);
 
-	private static final SessionFactory sSessionFactory;
+    private static final SessionFactory sSessionFactory;
 
-	private static final BlockingQueue<DB.Transaction> sPendingTransactions = new ArrayBlockingQueue<>(
-			128);
+    private static final BlockingQueue<DB.Transaction> sPendingTransactions = new ArrayBlockingQueue<>(
+            128);
 
-	private static Transaction sRunning = null;
-	private static final Thread sExecutor = new Thread(new Runnable() {
-		@Override
-		public void run() {
-			while (!Thread.interrupted()) {
-				try {
-					sRunning = sPendingTransactions.take();
-				} catch (InterruptedException e) {
-					break;
-				}
+    private static Transaction sRunning = null;
+    private static final Thread sExecutor = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            while (!Thread.interrupted()) {
+                try {
+                    sRunning = sPendingTransactions.take();
+                } catch (InterruptedException e) {
+                    break;
+                }
 
-				try {
-					sRunning.begin();
-					sRunning.run();
-					sRunning.end();
-				} catch (Exception ex) {
-					sLogger.error("Transaction failed", ex);
-					Utility.restart();
-				}
+                try {
+                    long start = System.currentTimeMillis();
 
-				sRunning = null;
-			}
-		}
-	});
+                    sRunning.begin();
+                    sRunning.run();
+                    sRunning.end();
 
-	static {
-		final Configuration configuration = new Configuration().configure();
+                    long end = System.currentTimeMillis();
+                    sLogger.trace((end - start) + "ms to do " +
+                                  sRunning.dQueuedFrom.toString());
+                } catch (Exception ex) {
+                    sLogger.error("Transaction failed", ex);
+                    Utility.restart();
+                }
 
-		ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
-				.applySettings(configuration.getProperties()).build();
-		sSessionFactory = configuration.buildSessionFactory(serviceRegistry);
+                sRunning = null;
+            }
+        }
+    });
 
-		sExecutor.start();
-	}
+    static {
+        final Configuration configuration = new Configuration().configure();
 
-	public static void executeTransaction(Transaction t) {
-		queueTransaction(t);
-		t.waitUntilDone();
-	}
+        ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
+                .applySettings(configuration.getProperties()).build();
+        sSessionFactory = configuration.buildSessionFactory(serviceRegistry);
 
-	public static Transaction queueTransaction(Transaction t) {
-		if (Thread.currentThread() == sExecutor) {
-			t.attach(sRunning);
-			t.run();
-			t.detach();
-		} else {
-			sLogger.debug("Transaction queued from "
-					+ Utility.getOuterTrace(DB.class).toString());
+        sExecutor.start();
+    }
 
-			try {
-				sPendingTransactions.put(t);
-			} catch (InterruptedException e) {
-				throw new IllegalStateException(e);
-			}
-		}
+    public static void executeTransaction(Transaction t) {
+        queueTransaction(t);
+        t.waitUntilDone();
+    }
 
-		return t;
-	}
+    public static Transaction queueTransaction(Transaction t) {
+        if (Thread.currentThread() == sExecutor) {
+            t.attach(sRunning);
+            t.run();
+            t.detach();
+        } else {
+            t.dQueuedFrom = Utility.getOuterTrace(DB.class);
+            try {
+                sPendingTransactions.put(t);
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+        }
 
-	public static abstract class Transaction implements Runnable {
-		private Session mSession;
-		private Transaction mParent = null;
+        return t;
+    }
 
-		private boolean mIsDirty = false;
+    public static abstract class Transaction implements Runnable {
+        private Session mSession;
+        private Transaction mParent = null;
 
-		private boolean mHasFinished = false;
-		private List<Runnable> mDoAfter = null;
+        private boolean mIsDirty = false;
 
-		private void attach(Transaction parent) {
-			mParent = parent;
-			mSession = mParent.mSession;
-		}
+        private boolean mHasFinished = false;
+        private List<Runnable> mDoAfter = null;
 
-		private void detach() {
-			mParent = null;
-			mSession = null;
+        private StackTraceElement dQueuedFrom;
 
-			synchronized (this) {
-				mHasFinished = true;
-				notifyAll();
-			}
-		}
+        private void attach(Transaction parent) {
+            mParent = parent;
+            mSession = mParent.mSession;
+        }
 
-		private void begin() {
-			mSession = sSessionFactory.openSession();
-			mSession.beginTransaction();
-		}
+        private void detach() {
+            mParent = null;
+            mSession = null;
 
-		private void end() {
-			try {
-				if (mIsDirty) {
-					mSession.getTransaction().commit();
-				}
-			} finally {
-				mSession.close();
+            synchronized (this) {
+                mHasFinished = true;
+                notifyAll();
+            }
+        }
 
-				synchronized (this) {
-					mHasFinished = true;
-					notifyAll();
+        private void begin() {
+            mSession = sSessionFactory.openSession();
+            mSession.beginTransaction();
+        }
 
-					if (mDoAfter != null) {
-						for (Runnable toDo : mDoAfter) {
-							toDo.run();
-						}
-					}
-				}
-			}
-		}
+        private void end() {
+            try {
+                if (mIsDirty) {
+                    mSession.getTransaction().commit();
+                }
+            } finally {
+                mSession.close();
 
-		private void dirty() {
-			if (mParent != null) {
-				mParent.dirty();
-			} else {
-				mIsDirty = true;
-			}
-		}
+                synchronized (this) {
+                    mHasFinished = true;
+                    notifyAll();
 
-		public synchronized boolean waitUntilDone() {
-			while (!mHasFinished) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					return false;
-				}
-			}
+                    if (mDoAfter != null) {
+                        for (Runnable toDo : mDoAfter) {
+                            toDo.run();
+                        }
+                    }
+                }
+            }
+        }
 
-			return true;
-		}
+        private void dirty() {
+            if (mParent != null) {
+                mParent.dirty();
+            } else {
+                mIsDirty = true;
+            }
+        }
 
-		public synchronized void doWhenDone(Runnable task) {
-			if (mHasFinished) {
-				task.run();
-			} else {
-				if (mDoAfter == null) {
-					mDoAfter = new ArrayList<Runnable>();
-				}
-				mDoAfter.add(task);
-			}
-		}
+        public synchronized boolean waitUntilDone() {
+            while (!mHasFinished) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    return false;
+                }
+            }
 
-		protected List<?> query(String hqlQuery, Object... params) {
-			final Query query = mSession.createQuery(hqlQuery);
+            return true;
+        }
 
-			for (int i = 0; i < params.length; i++) {
-				query.setParameter(String.valueOf(i), params[i]);
-			}
+        public synchronized void doWhenDone(Runnable task) {
+            if (mHasFinished) {
+                task.run();
+            } else {
+                if (mDoAfter == null) {
+                    mDoAfter = new ArrayList<Runnable>();
+                }
+                mDoAfter.add(task);
+            }
+        }
 
-			return query.list();
-		}
+        protected List<?> query(String hqlQuery, Object... params) {
+            final Query query = mSession.createQuery(hqlQuery);
 
-		@SuppressWarnings("unchecked")
-		protected <T> List<T> typedQuery(Class<T> clazz, String hqlQuery,
-				Object... params) {
-			final Query query = mSession.createQuery(hqlQuery);
+            for (int i = 0; i < params.length; i++) {
+                query.setParameter(String.valueOf(i), params[i]);
+            }
 
-			for (int i = 0; i < params.length; i++) {
-				query.setParameter(String.valueOf(i), params[i]);
-			}
+            return query.list();
+        }
 
-			final List<?> results = query.list();
+        @SuppressWarnings("unchecked")
+        protected <T> List<T> typedQuery(Class<T> clazz, String hqlQuery,
+                Object... params) {
+            final Query query = mSession.createQuery(hqlQuery);
 
-			final List<T> filteredResults = new ArrayList<T>();
-			for (Object row : results) {
-				if (clazz.isInstance(row)) {
-					filteredResults.add((T) row);
-				} else if (row instanceof Object[]) {
-					for (Object cell : (Object[]) row) {
-						if (clazz.isInstance(cell)) {
-							filteredResults.add((T) cell);
-							break;
-						}
-					}
-				}
-			}
-			return filteredResults;
-		}
+            for (int i = 0; i < params.length; i++) {
+                query.setParameter(String.valueOf(i), params[i]);
+            }
 
-		// Shorthand for simple queries against a single table.
-		@SuppressWarnings("unchecked")
-		protected <T> List<T> query(Class<T> type, String hqlQuery,
-				Object... params) {
-			return (List<T>) query("from " + type.getName() + " " + hqlQuery,
-					params);
-		}
+            final List<?> results = query.list();
 
-		@SuppressWarnings("unchecked")
-		protected <T> List<T> listAll(Class<T> clazz) {
-			return mSession.createQuery("from " + clazz.getName()).list();
-		}
+            final List<T> filteredResults = new ArrayList<T>();
+            for (Object row : results) {
+                if (clazz.isInstance(row)) {
+                    filteredResults.add((T) row);
+                } else if (row instanceof Object[]) {
+                    for (Object cell : (Object[]) row) {
+                        if (clazz.isInstance(cell)) {
+                            filteredResults.add((T) cell);
+                            break;
+                        }
+                    }
+                }
+            }
+            return filteredResults;
+        }
 
-		@SuppressWarnings("unchecked")
-		protected <T> T get(Class<T> clazz, long id) {
-			return (T) mSession.get(clazz, id);
-		}
+        // Shorthand for simple queries against a single table.
+        @SuppressWarnings("unchecked")
+        protected <T> List<T> query(Class<T> type, String hqlQuery,
+                Object... params) {
+            return (List<T>) query("from " + type.getName() + " " + hqlQuery,
+                    params);
+        }
 
-		protected void update(Object object) {
-			mSession.saveOrUpdate(object);
-			dirty();
-		}
+        @SuppressWarnings("unchecked")
+        protected <T> List<T> listAll(Class<T> clazz) {
+            return mSession.createQuery("from " + clazz.getName()).list();
+        }
 
-		protected void delete(Object object) {
-			mSession.delete(object);
-			dirty();
-		}
-	}
+        @SuppressWarnings("unchecked")
+        protected <T> T get(Class<T> clazz, long id) {
+            return (T) mSession.get(clazz, id);
+        }
+
+        protected void update(Object object) {
+            mSession.saveOrUpdate(object);
+            dirty();
+        }
+
+        protected void delete(Object object) {
+            mSession.delete(object);
+            dirty();
+        }
+    }
 }

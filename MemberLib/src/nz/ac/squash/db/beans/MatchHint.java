@@ -78,11 +78,12 @@ public abstract class MatchHint {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!getClass().isInstance(obj))
-			return false;
+		if (!getClass().isInstance(obj)) return false;
 
 		return ((MatchHint) obj).mID == mID;
 	}
+
+	public abstract boolean isTransient();
 
 	public boolean isInEffect(MemberStatus player1Status,
 			MemberStatus player2Status) {
@@ -100,20 +101,25 @@ public abstract class MatchHint {
 	public boolean isOverruledByAny(Collection<MatchHint> hints,
 			Tuple<Member, Member> forMatch) {
 		for (MatchHint hint : hints) {
-			if (hint.overrules(this, forMatch))
-				return true;
+			if (hint.overrules(this, forMatch)) return true;
 		}
 		return false;
 	}
 
+	public Collection<MatchHint> overrules(Collection<MatchHint> hints,
+			Tuple<Member, Member> forMatch) {
+		List<MatchHint> ret = new ArrayList<>();
+		for (MatchHint hint : hints) {
+			if (overrules(hint, forMatch)) ret.add(hint);
+		}
+		return ret;
+	}
+
 	public static int checkForOverrule(MatchHint a, MatchHint b,
 			Tuple<Member, Member> forMatch) {
-		if (a.overrules(b, forMatch))
-			return -1;
-		else if (b.overrules(a, forMatch))
-			return 1;
-		else
-			return 0;
+		if (a.overrules(b, forMatch)) return -1;
+		else if (b.overrules(a, forMatch)) return 1;
+		else return 0;
 	}
 
 	public static List<MatchHint> getHintsInEffect() {

@@ -366,7 +366,13 @@ public class ChallengeWindow extends JDialog {
 		DB.executeTransaction(new DB.Transaction() {
 			@Override
 			public void run() {
-				// TODO Ignore challenge if identical one is already pending.
+				// Ignore challenge if identical one is already pending.
+				boolean alreadyPending = !query(
+						MatchHintRequest.class,
+						"h where h.mDate >= ?0 and ((h.mPlayer1 = ?1 and h.mPlayer2 = ?2) or (h.mPlayer1 = ?2 and h.mPlayer2 = ?1))",
+						Utility.today(), mPlayer1, mPlayer2).isEmpty();
+				if (alreadyPending) return;
+
 				MatchHintRequest request = new MatchHintRequest();
 				request.setPlayer1(mPlayer1);
 				request.setPlayer2(mPlayer2);
