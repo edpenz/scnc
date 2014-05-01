@@ -597,7 +597,7 @@ public class CheckInPanel extends JPanel {
                             i++;
                         }
 
-                        mLadderGrid.revalidate();
+                        mLadderPanel.invalidate();
                         mLadderPanel.repaint();
                     }
                 });
