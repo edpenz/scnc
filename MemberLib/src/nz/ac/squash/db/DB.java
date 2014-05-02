@@ -20,10 +20,10 @@ public class DB {
 
     private static final SessionFactory sSessionFactory;
 
-    private static final BlockingQueue<DB.Transaction> sPendingTransactions = new ArrayBlockingQueue<>(
+    private static final BlockingQueue<DB.Transaction<?>> sPendingTransactions = new ArrayBlockingQueue<>(
             128);
 
-    private static Transaction sRunning = null;
+    private static Transaction<?> sRunning = null;
     private static final Thread sExecutor = new Thread(new Runnable() {
         @Override
         public void run() {
@@ -64,12 +64,13 @@ public class DB {
         sExecutor.start();
     }
 
-    public static void executeTransaction(Transaction t) {
+    public static <T> T executeTransaction(Transaction<T> t) {
         queueTransaction(t);
         t.waitUntilDone();
+        return t.getResult();
     }
 
-    public static Transaction queueTransaction(Transaction t) {
+    public static Transaction<?> queueTransaction(Transaction<?> t) {
         if (Thread.currentThread() == sExecutor) {
             t.attach(sRunning);
             t.run();
@@ -86,18 +87,19 @@ public class DB {
         return t;
     }
 
-    public static abstract class Transaction implements Runnable {
+    public static abstract class Transaction<R> implements Runnable {
         private Session mSession;
-        private Transaction mParent = null;
+        private Transaction<?> mParent = null;
 
         private boolean mIsDirty = false;
 
+        private R mResult = null;
         private boolean mHasFinished = false;
         private List<Runnable> mDoAfter = null;
 
         private StackTraceElement dQueuedFrom;
 
-        private void attach(Transaction parent) {
+        private void attach(Transaction<?> parent) {
             mParent = parent;
             mSession = mParent.mSession;
         }
@@ -167,6 +169,14 @@ public class DB {
                 }
                 mDoAfter.add(task);
             }
+        }
+
+        public R getResult() {
+            return mResult;
+        }
+
+        protected void setResult(R result) {
+            mResult = result;
         }
 
         protected List<?> query(String hqlQuery, Object... params) {

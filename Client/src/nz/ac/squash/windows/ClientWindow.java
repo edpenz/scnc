@@ -26,8 +26,7 @@ import nz.ac.squash.panels.SchedulePanel;
 import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JBrandedPanel;
-import nz.ac.squash.widget.JOverlay;
-import nz.ac.squash.widget.MatchPanel;
+import nz.ac.squash.widget.generic.JOverlay;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
@@ -44,15 +43,26 @@ public class ClientWindow extends JFrame {
         Utility.seedRestart(ClientWindow.class, args);
 
         // Logging.
-        Layout logLayout = new PatternLayout("[%t] %-5p %c %x - %m%n");
+        Layout consoleLayout = new PatternLayout("[%t] %-5p %c %x - %m%n");
+        Layout fileLayout = new PatternLayout(
+                "%d [%15.15t] %-5p %30.30c %x - %m%n");
 
-        BasicConfigurator.configure(new ConsoleAppender(logLayout));
+        // To console.
+        ConsoleAppender consoleAppender = new ConsoleAppender(consoleLayout);
+        consoleAppender.setThreshold(Level.TRACE);
+        BasicConfigurator.configure(consoleAppender);
+
+        // To file.
+        FileAppender fileAppender;
         try {
-            BasicConfigurator.configure(new FileAppender(logLayout,
+            fileAppender = new FileAppender(fileLayout,
                     "logs/" + Utility.FILE_SAFE_FORMATTER.format(new Date()) +
-                            ".log"));
+                            ".log");
+            fileAppender.setThreshold(Level.INFO);
+            BasicConfigurator.configure(fileAppender);
         } catch (IOException e1) {
         }
+
         Logger.getRootLogger().setLevel(Level.ALL);
         Logger.getLogger("org.hibernate").setLevel(Level.WARN);
 
@@ -73,7 +83,6 @@ public class ClientWindow extends JFrame {
         new ClientWindow().setVisible(true);
     }
 
-    private MatchPanel[][] mMatchPanels;
     private JPanel mPanelFrame;
     private SchedulePanel mSchedulePanel;
     private CheckInPanel mCheckinPanel;
@@ -170,7 +179,7 @@ public class ClientWindow extends JFrame {
         scheduleButton.setOpaque(false);
         panel_5.add(scheduleButton);
         panel_5.add(checkinButton);
-        JButton challengeButton = new JButton("Challange a Player");
+        JButton challengeButton = new JButton("Request a Match");
         challengeButton.setOpaque(false);
         challengeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -203,30 +212,6 @@ public class ClientWindow extends JFrame {
 
         mCheckinPanel = new CheckInPanel();
         mPanelFrame.add(mCheckinPanel, CheckInPanel.class.getSimpleName());
-    }
-
-    private void nextSlot(int court) {
-        int start = court == -1 ? 0 : court;
-        int end = court == -1 ? mMatchPanels.length : court + 1;
-
-        for (int c = start; c < end; ++c) {
-            for (int slot = 0; slot < mMatchPanels[c].length; slot++) {
-                final MatchPanel matchPanel = mMatchPanels[c][slot];
-                matchPanel.nextSlot();
-            }
-        }
-    }
-
-    private void previousSlot(int court) {
-        int start = court == -1 ? 0 : court;
-        int end = court == -1 ? mMatchPanels.length : court + 1;
-
-        for (int c = start; c < end; ++c) {
-            for (int slot = 0; slot < mMatchPanels[c].length; slot++) {
-                final MatchPanel matchPanel = mMatchPanels[c][slot];
-                matchPanel.previousSlot();
-            }
-        }
     }
 
     private void showPanel(Class<?> panel) {

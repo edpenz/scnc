@@ -117,7 +117,7 @@ public class Match {
     }
 
     public void cancel() {
-        DB.executeTransaction(new DB.Transaction() {
+        DB.executeTransaction(new DB.Transaction<Void>() {
             @Override
             public void run() {
                 for (MatchHint hint : query(MatchHint.class,
@@ -139,31 +139,30 @@ public class Match {
 
     public static Match createMatch(final Member player1, final Member player2,
             final int court, final int slot) {
-        final Match[] match = new Match[1];
-
-        DB.executeTransaction(new Transaction() {
+        return DB.executeTransaction(new Transaction<Match>() {
             @Override
             public void run() {
                 // Create fixed match.
-                match[0] = new Match(player1, player2, court, slot);
+                Match proto = new Match(player1, player2, court, slot);
+                update(proto);
+
+                sLogger.info("Created match: " + proto);
 
                 // Satisfy any relevant hints.
                 List<MatchHint> matchHints = MatchHint.getHintsInEffect();
 
                 for (MatchHint hint : matchHints) {
                     if (hint.isSatisfiedBy(player1, player2)) {
-                        hint.setSatisfiedBy(match[0]);
+                        hint.setSatisfiedBy(proto);
                         update(hint);
-                        break;
+
+                        sLogger.info("  which satisfies: " + hint);
                     }
                 }
 
-                // Persist match.
-                update(match[0]);
+                setResult(proto);
             }
         });
-
-        return match[0];
     }
 
     public static Match createMatch(int court, int slot) {
@@ -265,8 +264,7 @@ public class Match {
 
     public static Match createMatch(final int court, final int slot,
             final Collection<MatchHint> extraHints) {
-        final Match[] returnValue = new Match[] { null };
-        DB.executeTransaction(new DB.Transaction() {
+        return DB.executeTransaction(new DB.Transaction<Match>() {
             @Override
             public void run() {
                 // Load reference materials before n^2 loop.
@@ -315,7 +313,7 @@ public class Match {
                 }
 
                 // Iterate over each player pairing and compute score.
-                Match bestMatch = null;
+                Tuple<Member, Member> bestMatch = null;
                 MatchProperties bestMatchScore = null;
                 for (Member player1 : memberStatuses.keySet()) {
                     for (Member player2 : memberStatuses.keySet()) {
@@ -393,7 +391,7 @@ public class Match {
 
                         // Pick best so far.
                         if (LADDER_COMPARATOR.compare(bestMatchScore, score) > 0) {
-                            bestMatch = new Match(player1, player2, court, slot);
+                            bestMatch = pairing;
                             bestMatchScore = score;
                         }
                     }
@@ -401,24 +399,10 @@ public class Match {
 
                 // Might not have found any valid matches.
                 if (bestMatch != null) {
-                    returnValue[0] = bestMatch;
-
-                    // Save found match with the best score.
-                    update(bestMatch);
-
-                    // Clear satisfied hints.
-                    for (MatchHint hint : matchHints) {
-                        if (!hint.isTransient() &&
-                            hint.isSatisfiedBy(bestMatch.mPlayer1,
-                                    bestMatch.mPlayer2)) {
-                            hint.setSatisfiedBy(bestMatch);
-                            update(hint);
-                        }
-                    }
+                    setResult(createMatch(bestMatch.getA(), bestMatch.getB(),
+                            court, slot));
                 }
             }
         });
-
-        return returnValue[0];
     }
 }

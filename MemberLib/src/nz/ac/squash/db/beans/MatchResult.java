@@ -77,7 +77,7 @@ public class MatchResult {
 
     // Adds a user to the ladder if they have not been already.
     public static void addToLadder(final Member member) {
-        DB.queueTransaction(new Transaction() {
+        DB.queueTransaction(new Transaction<Void>() {
             @Override
             public void run() {
                 // Abort if already on ladder.
@@ -119,7 +119,7 @@ public class MatchResult {
     public static List<Member> getLadder() {
         final List<Member> ladder = new ArrayList<Member>();
 
-        DB.executeTransaction(new Transaction() {
+        DB.executeTransaction(new Transaction<Void>() {
             @Override
             public void run() {
                 for (MatchResult result : listAll(MatchResult.class)) {

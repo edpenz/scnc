@@ -1,4 +1,4 @@
-package nz.ac.squash.widget;
+package nz.ac.squash.widget.generic;
 
 import java.awt.Component;
 import java.awt.FontMetrics;

@@ -1,4 +1,4 @@
-package nz.ac.squash.widget;
+package nz.ac.squash.widget.generic;
 
 import java.awt.Color;
 import java.awt.Graphics;

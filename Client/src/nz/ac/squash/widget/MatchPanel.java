@@ -38,6 +38,7 @@ import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.Utility;
+import nz.ac.squash.widget.generic.JTextField;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -99,8 +100,8 @@ public class MatchPanel extends JPanel {
     private JButton mCancelButton;
     private JButton mKickPlayer1Button;
     private JButton mKickPlayer2Button;
-    private JTextFieldPlus mPlayer1Field;
-    private JTextFieldPlus mPlayer2Field;
+    private JTextField mPlayer1Field;
+    private JTextField mPlayer2Field;
 
     public MatchPanel(int court, int slot) {
         mCourt = court;
@@ -253,7 +254,7 @@ public class MatchPanel extends JPanel {
         gbc_mDrawButton.gridy = 1;
         mReviewPanel.add(mDrawButton, gbc_mDrawButton);
 
-        mPlayer1Field = new JTextFieldPlus();
+        mPlayer1Field = new JTextField();
         mPlayer1Field.setPlaceholder("Player 1");
         mPlayer1Field.setColumns(10);
         GridBagConstraints gbc_mPlayer1Field = new GridBagConstraints();
@@ -348,7 +349,7 @@ public class MatchPanel extends JPanel {
         gbc_mCancelButton.gridy = 1;
         mSchedulePanelInner.add(mCancelButton, gbc_mCancelButton);
 
-        mPlayer2Field = new JTextFieldPlus();
+        mPlayer2Field = new JTextField();
         mPlayer2Field.setPlaceholder("Player 2");
         mPlayer2Field.setColumns(10);
         GridBagConstraints gbc_mPlayer2Field = new GridBagConstraints();

@@ -43,8 +43,9 @@ import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.Utility;
-import nz.ac.squash.widget.JTextFieldPlus;
 import nz.ac.squash.widget.LadderEntry;
+import nz.ac.squash.widget.generic.JTextField;
+import nz.ac.squash.widget.generic.VerticalGridLayout;
 import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
@@ -52,7 +53,7 @@ import org.apache.commons.lang3.StringUtils;
 public class CheckInPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
-    private JTextFieldPlus mSearchField;
+    private JTextField mSearchField;
     private JList<Member> mResultsList;
     private JPanel mButtonsPanel;
     private JLabel mStep3Label;
@@ -65,6 +66,7 @@ public class CheckInPanel extends JPanel {
     private JLabel label;
     private JLabel lblLadder;
     private JPanel mLadderGrid;
+    private JButton playManualButton;
 
     private static final ListModel<Member> EMPTY_RESULTS = new DefaultListModel<Member>();
 
@@ -77,11 +79,9 @@ public class CheckInPanel extends JPanel {
     };
 
     private Member mSelectedMember = null;
-    private JButton playManualButton;
 
     private final List<LadderEntry> mLadderEntries = new ArrayList<LadderEntry>();
     private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
-    private JPanel mLadderPanel;
 
     public CheckInPanel() {
         createContents();
@@ -142,7 +142,7 @@ public class CheckInPanel extends JPanel {
         lblSelectYour.setForeground(Color.WHITE);
         lblSelectYour.setFont(new Font("Tahoma", Font.PLAIN, 16));
 
-        mSearchField = new JTextFieldPlus();
+        mSearchField = new JTextField();
         mSearchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -384,34 +384,19 @@ public class CheckInPanel extends JPanel {
         gbc_panel_6.gridy = 6;
         checkinPanel.add(panel_6, gbc_panel_6);
 
-        mLadderPanel = new JPanel();
-        mLadderPanel.setBackground(Color.decode("#0065B3"));
         GridBagConstraints gbc_mLadderPanel = new GridBagConstraints();
         gbc_mLadderPanel.fill = GridBagConstraints.BOTH;
         gbc_mLadderPanel.gridx = 3;
         gbc_mLadderPanel.gridy = 2;
-        add(mLadderPanel, gbc_mLadderPanel);
-        GridBagLayout gbl_mLadderPanel = new GridBagLayout();
-        gbl_mLadderPanel.columnWidths = new int[] { 378, 0 };
-        gbl_mLadderPanel.rowHeights = new int[] { 363, 0 };
-        gbl_mLadderPanel.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-        gbl_mLadderPanel.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
-        mLadderPanel.setLayout(gbl_mLadderPanel);
 
         mLadderGrid = new JPanel();
+        mLadderGrid.setBackground(Color.decode("#0065B3"));
         GridBagConstraints gbc_mLadderGrid = new GridBagConstraints();
-        gbc_mLadderGrid.insets = new Insets(5, 0, 5, 0);
         gbc_mLadderGrid.fill = GridBagConstraints.BOTH;
         gbc_mLadderGrid.gridx = 0;
         gbc_mLadderGrid.gridy = 0;
-        mLadderPanel.add(mLadderGrid, gbc_mLadderGrid);
-        mLadderGrid.setOpaque(false);
-        GridBagLayout gbl_mLadderGrid = new GridBagLayout();
-        gbl_mLadderGrid.columnWidths = new int[] { 0 };
-        gbl_mLadderGrid.rowHeights = new int[] { 0 };
-        gbl_mLadderGrid.columnWeights = new double[] { Double.MIN_VALUE };
-        gbl_mLadderGrid.rowWeights = new double[] { Double.MIN_VALUE };
-        mLadderGrid.setLayout(gbl_mLadderGrid);
+        add(mLadderGrid, gbc_mLadderPanel);
+        mLadderGrid.setLayout(new VerticalGridLayout(15, 0, 5, 0));
     }
 
     private String getSkillLevel() {
@@ -583,22 +568,12 @@ public class CheckInPanel extends JPanel {
                     public void run() {
                         mLadderGrid.removeAll();
 
-                        int i = 0;
                         for (LadderEntry entry : mLadderEntries) {
-                            GridBagConstraints gbc = new GridBagConstraints();
-                            gbc.gridx = i / 21;
-                            gbc.gridy = i % 21;
-                            gbc.fill = GridBagConstraints.BOTH;
-                            gbc.weightx = 1.f;
-                            gbc.weighty = 1.f;
-                            gbc.insets.set(0, 5, 0, 5);
-                            mLadderGrid.add(entry, gbc);
-
-                            i++;
+                            mLadderGrid.add(entry);
                         }
 
-                        mLadderPanel.invalidate();
-                        mLadderPanel.repaint();
+                        mLadderGrid.revalidate();
+                        mLadderGrid.repaint();
                     }
                 });
             }
