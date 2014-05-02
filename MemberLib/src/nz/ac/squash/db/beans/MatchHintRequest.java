@@ -2,10 +2,16 @@ package nz.ac.squash.db.beans;
 
 import javax.persistence.Entity;
 
+import nz.ac.squash.db.DB;
 import nz.ac.squash.util.Tuple;
+
+import org.apache.log4j.Logger;
 
 @Entity
 public class MatchHintRequest extends MatchHint {
+    private static final Logger sLogger = Logger
+            .getLogger(MatchHintRequest.class);
+
     @Override
     public String toString() {
         return "Request " + getPlayer1().getNameFormatted() + " vs. " +
@@ -66,5 +72,24 @@ public class MatchHintRequest extends MatchHint {
         }
 
         return false;
+    }
+
+    public static MatchHintRequest createRequest(final Member player1,
+            final Member player2) {
+        return DB.executeTransaction(new DB.Transaction<MatchHintRequest>() {
+            @Override
+            public void run() {
+                MatchHintRequest request = new MatchHintRequest();
+                request.setPlayer1(player1);
+                request.setPlayer2(player2);
+                update(request);
+
+                sLogger.info("Match requested between " +
+                             player1.getNameFormatted() + " and " +
+                             player2.getNameFormatted());
+
+                setResult(request);
+            }
+        });
     }
 }

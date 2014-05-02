@@ -7,6 +7,7 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -14,6 +15,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -57,7 +59,7 @@ public class MatchPanel extends JPanel {
     private final boolean mPastSlot;
 
     private int mCourt;
-    private int mSlot;
+    private int mSlot, mOriginalSlot;
     private Match mMatch = null;
     private MatchResult mResult = null;
 
@@ -103,15 +105,23 @@ public class MatchPanel extends JPanel {
     private JTextField mPlayer1Field;
     private JTextField mPlayer2Field;
 
-    public MatchPanel(int court, int slot) {
+    private final Collection<MatchPanel> mSameCourt;
+    private final Collection<MatchPanel> mSameSlot;
+    private JLabel mPlayer1Warning;
+    private JLabel mPlayer2Warning;
+
+    public MatchPanel(int court, int slot, Collection<MatchPanel> sameCourt,
+            Collection<MatchPanel> sameSlot) {
         mCourt = court;
-        mSlot = slot;
+        mSlot = mOriginalSlot = slot;
         mPastSlot = slot < 0;
+
+        mSameCourt = sameCourt;
+        mSameSlot = sameSlot;
 
         createContents();
 
         recursivelyAddMouseListener(mSchedulePanelInner, mHoverListener);
-
         recursivelyAddMouseListener(mReviewPanel, mHoverListener);
 
         loadMatch();
@@ -145,9 +155,9 @@ public class MatchPanel extends JPanel {
         mGameInfo.setOpaque(false);
         add(mGameInfo, "game_info");
         GridBagLayout gbl_mGameInfo = new GridBagLayout();
-        gbl_mGameInfo.columnWidths = new int[] { 0, 0 };
+        gbl_mGameInfo.columnWidths = new int[] { 0, 0, 0 };
         gbl_mGameInfo.rowHeights = new int[] { 0, 0, 0, 0 };
-        gbl_mGameInfo.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
+        gbl_mGameInfo.columnWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
         gbl_mGameInfo.rowWeights = new double[] { 1.0, 0.0, 1.0,
                 Double.MIN_VALUE };
         mGameInfo.setLayout(gbl_mGameInfo);
@@ -160,8 +170,19 @@ public class MatchPanel extends JPanel {
         mGameInfo.add(mPlayer1Label, gbc_mPlayer1Label);
         mPlayer1Label.setFont(new Font("Tahoma", Font.BOLD, 14));
 
+        mPlayer1Warning = new JLabel(" !");
+        mPlayer1Warning.setVisible(false);
+        mPlayer1Warning.setForeground(Color.RED);
+        mPlayer1Warning.setFont(new Font("Tahoma", Font.BOLD, 14));
+        GridBagConstraints gbc_mPlayer1Warning = new GridBagConstraints();
+        gbc_mPlayer1Warning.anchor = GridBagConstraints.SOUTH;
+        gbc_mPlayer1Warning.gridx = 1;
+        gbc_mPlayer1Warning.gridy = 0;
+        mGameInfo.add(mPlayer1Warning, gbc_mPlayer1Warning);
+
         mVersusLabel = new JLabel("versus");
         GridBagConstraints gbc_versusLabel = new GridBagConstraints();
+        gbc_versusLabel.insets = new Insets(5, 0, 5, 0);
         gbc_versusLabel.gridx = 0;
         gbc_versusLabel.gridy = 1;
         mGameInfo.add(mVersusLabel, gbc_versusLabel);
@@ -173,6 +194,16 @@ public class MatchPanel extends JPanel {
         gbc_mPlayer2Label.gridy = 2;
         mGameInfo.add(mPlayer2Label, gbc_mPlayer2Label);
         mPlayer2Label.setFont(new Font("Tahoma", Font.BOLD, 14));
+
+        mPlayer2Warning = new JLabel(" !");
+        mPlayer2Warning.setVisible(false);
+        mPlayer2Warning.setForeground(Color.RED);
+        mPlayer2Warning.setFont(new Font("Tahoma", Font.BOLD, 14));
+        GridBagConstraints gbc_mPlayer2Warning = new GridBagConstraints();
+        gbc_mPlayer2Warning.anchor = GridBagConstraints.NORTH;
+        gbc_mPlayer2Warning.gridx = 1;
+        gbc_mPlayer2Warning.gridy = 2;
+        mGameInfo.add(mPlayer2Warning, gbc_mPlayer2Warning);
 
         mSchedulePanel = new JPanel();
         mSchedulePanel.setVisible(false);
@@ -444,7 +475,7 @@ public class MatchPanel extends JPanel {
     }
 
     private void loadMatch() {
-        DB.executeTransaction(new Transaction() {
+        DB.executeTransaction(new DB.Transaction<Void>() {
             @Override
             public void run() {
                 mMatch = Utility
@@ -463,7 +494,57 @@ public class MatchPanel extends JPanel {
         refreshPanel();
     }
 
+    public void checkForCollisions() {
+        if (mMatch == null) return;
+
+        Member u1 = mMatch.getPlayer1();
+        Member u2 = mMatch.getPlayer2();
+
+        int minPlayer1Distance = Integer.MAX_VALUE;
+        int minPlayer2Distance = Integer.MAX_VALUE;
+        for (MatchPanel otherSlot : mSameSlot) {
+            for (MatchPanel otherCourt : otherSlot.mSameCourt) {
+                if (otherCourt.mCourt == mCourt) continue;
+                if (otherCourt.mMatch == null) continue;
+                if (otherCourt.mPastSlot || mPastSlot) continue;
+
+                int distance = Math.abs(otherCourt.mOriginalSlot -
+                                        mOriginalSlot);
+                Member t1 = otherCourt.mMatch.getPlayer1();
+                Member t2 = otherCourt.mMatch.getPlayer2();
+
+                if (distance < minPlayer1Distance &&
+                    (u1.equals(t1) || u1.equals(t2))) {
+                    minPlayer1Distance = distance;
+                }
+
+                if (distance < minPlayer2Distance &&
+                    (u2.equals(t1) || u2.equals(t2))) {
+                    minPlayer2Distance = distance;
+                }
+            }
+        }
+
+        mPlayer1Warning.setForeground(minPlayer1Distance == 0 ? Color.RED
+                : Color.ORANGE);
+        mPlayer1Warning.setVisible(minPlayer1Distance <= 1);
+
+        mPlayer2Warning.setForeground(minPlayer2Distance == 0 ? Color.RED
+                : Color.ORANGE);
+        mPlayer2Warning.setVisible(minPlayer2Distance <= 1);
+    }
+
     private void refreshPanel() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    refreshPanel();
+                }
+            });
+            return;
+        }
+
         // Update plain panel.
         if (mMatch != null) {
             mPlayer1Label.setText(mMatch.getPlayer1().getNameFormatted());
@@ -570,10 +651,16 @@ public class MatchPanel extends JPanel {
 
         // Update UI to show match.
         refreshPanel();
+
+        for (MatchPanel outer : mSameSlot) {
+            for (MatchPanel inner : outer.mSameCourt) {
+                inner.checkForCollisions();
+            }
+        }
     }
 
     private void kickPlayer(final Member memberToKick) {
-        DB.executeTransaction(new DB.Transaction() {
+        DB.executeTransaction(new DB.Transaction<Void>() {
             @Override
             public void run() {
                 // Indicate player has left.
@@ -592,8 +679,6 @@ public class MatchPanel extends JPanel {
                 scheduleMatch();
             }
         });
-
-        refreshPanel();
     }
 
     private void cancelMatch() {
@@ -604,6 +689,12 @@ public class MatchPanel extends JPanel {
         mResult = null;
 
         refreshPanel();
+
+        for (MatchPanel outer : mSameSlot) {
+            for (MatchPanel inner : outer.mSameCourt) {
+                inner.checkForCollisions();
+            }
+        }
     }
 
     private void clearHints() {
@@ -617,7 +708,7 @@ public class MatchPanel extends JPanel {
     }
 
     private void indicateWinner(final Member winner) {
-        DB.executeTransaction(new Transaction() {
+        DB.executeTransaction(new Transaction<Void>() {
             @Override
             public void run() {
                 // Make sure result is not already set.

@@ -15,7 +15,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,6 @@ import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
-import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.LadderEntry;
 import nz.ac.squash.widget.generic.JTextField;
 import nz.ac.squash.widget.generic.VerticalGridLayout;
@@ -488,7 +486,7 @@ public class CheckInPanel extends JPanel {
     }
 
     private void setMemberStatus(final boolean playGames, final boolean present) {
-        DB.executeTransaction(new Transaction() {
+        DB.executeTransaction(new Transaction<Void>() {
             @Override
             public void run() {
                 MemberStatus newStatus = new MemberStatus(mSelectedMember,
@@ -529,21 +527,19 @@ public class CheckInPanel extends JPanel {
         mLadderEntries.clear();
         mLadderMapping.clear();
 
-        DB.queueTransaction(new Transaction() {
+        DB.queueTransaction(new Transaction<Void>() {
             @Override
             public void run() {
-                final Date today = Utility.stripTime(new Date());
+                final Map<Member, MemberStatus> memberStatuses = new HashMap<>();
+                for (MemberStatus status : MemberStatus.getPresentMembers()) {
+                    memberStatuses.put(status.getMember(), status);
+                }
 
                 int i = 0;
                 for (final Member member : MatchResult.getLadder()) {
                     // Get status of member.
-                    MemberStatus todaysStatus = Utility
-                            .first(query(
-                                    MemberStatus.class,
-                                    "s where mDate >= ?0 and mMember = ?1 order by mDate desc",
-                                    today, member));
-                    boolean present = todaysStatus != null &&
-                                      todaysStatus.isPresent();
+                    MemberStatus status = memberStatuses.get(member);
+                    boolean present = status != null && status.isPresent();
 
                     // Create UI entry.
                     LadderEntry entry = new LadderEntry(i + 1, member, present);

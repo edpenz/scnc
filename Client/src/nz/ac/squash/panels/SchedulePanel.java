@@ -8,6 +8,8 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -25,6 +27,35 @@ public class SchedulePanel extends JPanel {
 
     public SchedulePanel() {
         createContents();
+
+        int[] COURTS = new int[] { 5, 6, 7, 8, 1, 2, 3, 4 };
+        int SLOTS = 6;
+        mMatchPanels = new MatchPanel[COURTS.length][SLOTS];
+
+        List<MatchPanel>[] courtGroups = (List<MatchPanel>[]) new List<?>[COURTS.length];
+        List<MatchPanel>[] slotGroups = (List<MatchPanel>[]) new List<?>[SLOTS];
+
+        for (int i = 0; i < slotGroups.length; i++) {
+            slotGroups[i] = new ArrayList<>();
+        }
+
+        for (int i = 0; i < courtGroups.length; i++) {
+            courtGroups[i] = new ArrayList<>();
+        }
+
+        for (int court = 0; court < COURTS.length; court++) {
+            for (int slot = 0; slot < SLOTS; slot++) {
+                MatchPanel matchPanel = mMatchPanels[court][slot] = new MatchPanel(
+                        COURTS[court], slot - 2, courtGroups[court],
+                        slotGroups[slot]);
+
+                mMatchGrid.add(matchPanel);
+                courtGroups[court].add(matchPanel);
+                slotGroups[slot].add(matchPanel);
+            }
+        }
+
+        checkForCollisions();
     }
 
     private void createContents() {
@@ -173,17 +204,6 @@ public class SchedulePanel extends JPanel {
         add(mMatchGrid, gbc_mMatchGrid);
         mMatchGrid.setLayout(new VerticalGridLayout(0, 8, 0, 0));
 
-        int[] COURTS = new int[] { 5, 6, 7, 8, 1, 2, 3, 4 };
-        mMatchPanels = new MatchPanel[8][6];
-        for (int court = 0; court < 8; court++) {
-            for (int time = 0; time < 6; time++) {
-                MatchPanel matchPanel = mMatchPanels[court][time] = new MatchPanel(
-                        COURTS[court], time - 2);
-
-                mMatchGrid.add(matchPanel);
-            }
-        }
-
         JPanel panel_7 = new JPanel();
         panel_7.setOpaque(false);
         GridBagConstraints gbc_panel_7 = new GridBagConstraints();
@@ -283,6 +303,8 @@ public class SchedulePanel extends JPanel {
                 matchPanel.nextSlot();
             }
         }
+
+        checkForCollisions();
     }
 
     private void previousSlot(int court) {
@@ -293,6 +315,17 @@ public class SchedulePanel extends JPanel {
             for (int slot = 0; slot < mMatchPanels[c].length; slot++) {
                 final MatchPanel matchPanel = mMatchPanels[c][slot];
                 matchPanel.previousSlot();
+            }
+        }
+
+        checkForCollisions();
+    }
+
+    private void checkForCollisions() {
+        for (int court = 0; court < 8; court++) {
+            for (int slot = 0; slot < 6; slot++) {
+                // TODO Actual range.
+                mMatchPanels[court][slot].checkForCollisions();
             }
         }
     }

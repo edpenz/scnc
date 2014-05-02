@@ -120,15 +120,23 @@ public class Match {
         DB.executeTransaction(new DB.Transaction<Void>() {
             @Override
             public void run() {
+                sLogger.info("Cancelling match: " + Match.this);
+
+                // Re-enable hints satisfied by this match.
                 for (MatchHint hint : query(MatchHint.class,
                         "h where h.mSatisfiedBy = ?0", Match.this)) {
                     hint.setSatisfiedBy(null);
                     update(hint);
+
+                    sLogger.info("  which satisfied: " + hint);
                 }
 
+                // Remove result for match.
                 for (MatchResult result : query(MatchResult.class,
                         "r where r.mMatch = ?0", Match.this)) {
                     delete(result);
+
+                    sLogger.info("  which had result: " + result);
                 }
 
                 // Can only delete object from same session.
@@ -274,10 +282,8 @@ public class Match {
                 // status.
                 final Map<Member, MemberStatus> memberStatuses = new HashMap<>();
                 {
-                    for (MemberStatus latestStatus : MemberStatus
-                            .getPresentMembers()) {
-                        memberStatuses.put(latestStatus.getMember(),
-                                latestStatus);
+                    for (MemberStatus status : MemberStatus.getPresentMembers()) {
+                        memberStatuses.put(status.getMember(), status);
                     }
 
                     // Must have at least 2 players for a match.

@@ -43,9 +43,13 @@ import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.generic.JTextField;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
 
 public class ChallengeWindow extends JDialog {
     private static final long serialVersionUID = 1L;
+
+    private static final Logger sLogger = Logger
+            .getLogger(ChallengeWindow.class);
 
     public static ChallengeWindow showDialog(Component parent) {
         final JFrame frame = parent instanceof JFrame ? (JFrame) parent
@@ -370,12 +374,16 @@ public class ChallengeWindow extends JDialog {
                         MatchHintRequest.class,
                         "h where h.mDate >= ?0 and ((h.mPlayer1 = ?1 and h.mPlayer2 = ?2) or (h.mPlayer1 = ?2 and h.mPlayer2 = ?1))",
                         Utility.today(), mPlayer1, mPlayer2).isEmpty();
-                if (alreadyPending) return;
 
-                MatchHintRequest request = new MatchHintRequest();
-                request.setPlayer1(mPlayer1);
-                request.setPlayer2(mPlayer2);
-                update(request);
+                // Make the request.
+                if (alreadyPending) {
+                    sLogger.info("Ignoring request between " +
+                                 mPlayer1.getNameFormatted() + " and " +
+                                 mPlayer2.getNameFormatted() +
+                                 " because a similar request is already pending");
+                } else {
+                    MatchHintRequest.createRequest(mPlayer1, mPlayer2);
+                }
             }
         });
 

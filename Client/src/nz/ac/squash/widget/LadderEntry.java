@@ -28,8 +28,7 @@ public class LadderEntry extends JPanel {
 
         mRankLabel.setText("#" + rank);
         mNameLabel.setText(member.getNameFormatted());
-        setBackground(rank % 2 == 1 ? Color.WHITE
-                : Color.decode("#eeeeee"));
+        setBackground(rank % 2 == 1 ? Color.WHITE : Color.decode("#eeeeee"));
 
         setPresent(present);
     }
@@ -57,10 +56,8 @@ public class LadderEntry extends JPanel {
     public void setPresent(boolean present) {
         setOpaque(present);
 
-        mRankLabel.setForeground(present ? Color.BLACK
-                : Color.LIGHT_GRAY);
-        mNameLabel.setForeground(present ? Color.BLACK
-                : Color.LIGHT_GRAY);
+        mRankLabel.setForeground(present ? Color.BLACK : Color.LIGHT_GRAY);
+        mNameLabel.setForeground(present ? Color.BLACK : Color.LIGHT_GRAY);
         mPresentLabel.setVisible(present);
     }
 
