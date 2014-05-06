@@ -11,7 +11,7 @@ import nz.ac.squash.db.beans.Member;
 public class MakeLadder {
 
     public static void main(String[] args) throws IOException {
-        File ladderFile = new File("logs/ladder.txt");
+        File ladderFile = new File("logs/ladder.csv");
         FileWriter fw = new FileWriter(ladderFile);
 
         List<Member> ladder = MatchResult.getLadder();
