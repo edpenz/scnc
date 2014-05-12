@@ -612,10 +612,10 @@ public class MatchPanel extends JPanel {
     }
 
     private void onHover() {
-        if (!mPastSlot) {
-            ((CardLayout) getLayout()).show(this, "schedule_panel");
-        } else if (mMatch != null) {
+        if (mOriginalSlot <= 0 && mMatch != null) {
             ((CardLayout) getLayout()).show(this, "review_panel");
+        } else if (mOriginalSlot >= 0) {
+            ((CardLayout) getLayout()).show(this, "schedule_panel");
         }
     }
 
