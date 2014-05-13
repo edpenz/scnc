@@ -15,6 +15,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,6 @@ public class CheckInPanel extends JPanel {
 
     private Member mSelectedMember = null;
 
-    private final List<LadderEntry> mLadderEntries = new ArrayList<LadderEntry>();
     private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
 
     public CheckInPanel() {
@@ -524,7 +524,6 @@ public class CheckInPanel extends JPanel {
     }
 
     public void refreshLadder() {
-        mLadderEntries.clear();
         mLadderMapping.clear();
 
         DB.queueTransaction(new Transaction<Void>() {
@@ -535,8 +534,15 @@ public class CheckInPanel extends JPanel {
                     memberStatuses.put(status.getMember(), status);
                 }
 
+                final Collection<Member> ladder = MatchResult.getLadder();
+
+                // Make a static copy of the ladder widget list.
+                final List<LadderEntry> entries = new ArrayList<>();
+
+                mLadderMapping.clear();
+
                 int i = 0;
-                for (final Member member : MatchResult.getLadder()) {
+                for (final Member member : ladder) {
                     // Get status of member.
                     MemberStatus status = memberStatuses.get(member);
                     boolean present = status != null && status.isPresent();
@@ -552,8 +558,8 @@ public class CheckInPanel extends JPanel {
                     });
 
                     // Add to internal lists.
-                    mLadderEntries.add(entry);
                     mLadderMapping.put(member, entry);
+                    entries.add(entry);
 
                     i++;
                 }
@@ -564,7 +570,7 @@ public class CheckInPanel extends JPanel {
                     public void run() {
                         mLadderGrid.removeAll();
 
-                        for (LadderEntry entry : mLadderEntries) {
+                        for (LadderEntry entry : entries) {
                             mLadderGrid.add(entry);
                         }
 

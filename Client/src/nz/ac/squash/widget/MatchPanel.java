@@ -713,6 +713,8 @@ public class MatchPanel extends JPanel {
             }
         } else {
             refreshPanel();
+
+            ((CardLayout) getLayout()).show(this, "game_info");
         }
     }
 }
