@@ -56,8 +56,6 @@ public class MatchPanel extends JPanel {
     private JPanel mSchedulePanelInner;
     private JPanel mStatusPanel;
 
-    private final boolean mPastSlot;
-
     private int mCourt;
     private int mSlot, mOriginalSlot;
     private Match mMatch = null;
@@ -72,9 +70,8 @@ public class MatchPanel extends JPanel {
     private Member mPlayer1Hint = null;
     private Member mPlayer2Hint = null;
 
-    private MouseListener mHoverListener = new MouseAdapter() {
-        private boolean mIsHovering = false;
-
+    private boolean mIsHovering = false;
+    private final MouseListener mHoverListener = new MouseAdapter() {
         @Override
         public void mouseExited(MouseEvent e) {
             Point loc = new Point(e.getLocationOnScreen());
@@ -82,7 +79,8 @@ public class MatchPanel extends JPanel {
 
             if (!new Rectangle(getSize()).contains(loc)) {
                 mIsHovering = false;
-                onHoverEnd();
+                clearHints();
+                switchPanel();
             }
         }
 
@@ -90,7 +88,7 @@ public class MatchPanel extends JPanel {
         public void mouseEntered(MouseEvent arg0) {
             if (!mIsHovering) {
                 mIsHovering = true;
-                onHover();
+                switchPanel();
             }
         }
     };
@@ -110,11 +108,11 @@ public class MatchPanel extends JPanel {
     private JLabel mPlayer1Warning;
     private JLabel mPlayer2Warning;
 
-    public MatchPanel(int court, int slot, Collection<MatchPanel> sameCourt,
-            Collection<MatchPanel> sameSlot) {
+    public MatchPanel(int court, int baseSlot, int slot,
+            Collection<MatchPanel> sameCourt, Collection<MatchPanel> sameSlot) {
         mCourt = court;
-        mSlot = mOriginalSlot = slot;
-        mPastSlot = slot < 0;
+        mOriginalSlot = baseSlot;
+        mSlot = slot;
 
         mSameCourt = sameCourt;
         mSameSlot = sameSlot;
@@ -492,6 +490,7 @@ public class MatchPanel extends JPanel {
         });
 
         refreshPanel();
+        switchPanel();
     }
 
     public void checkForCollisions() {
@@ -506,7 +505,7 @@ public class MatchPanel extends JPanel {
             for (MatchPanel otherCourt : otherSlot.mSameCourt) {
                 if (otherCourt.mCourt == mCourt) continue;
                 if (otherCourt.mMatch == null) continue;
-                if (otherCourt.mPastSlot || mPastSlot) continue;
+                if (otherCourt.mOriginalSlot < 0 || mOriginalSlot < 0) continue;
 
                 int distance = Math.abs(otherCourt.mOriginalSlot -
                                         mOriginalSlot);
@@ -600,33 +599,18 @@ public class MatchPanel extends JPanel {
             mPlayer1Field.setText("");
             mPlayer2Field.setText("");
         }
-
-        // Switch between game and blank panel.
-        if (!mSchedulePanel.isVisible() && !mReviewPanel.isVisible()) {
-            if (mMatch != null) {
-                ((CardLayout) getLayout()).show(this, "game_info");
-            } else {
-                ((CardLayout) getLayout()).show(this, "status_panel");
-            }
-        }
     }
 
-    private void onHover() {
-        if (mOriginalSlot <= 0 && mMatch != null) {
+    private void switchPanel() {
+        if (mIsHovering && mOriginalSlot <= 0 && mMatch != null) {
             ((CardLayout) getLayout()).show(this, "review_panel");
-        } else if (mOriginalSlot >= 0) {
+        } else if (mIsHovering && mOriginalSlot >= 0) {
             ((CardLayout) getLayout()).show(this, "schedule_panel");
-        }
-    }
-
-    private void onHoverEnd() {
-        if (mMatch != null) {
+        } else if (mMatch != null) {
             ((CardLayout) getLayout()).show(this, "game_info");
         } else {
             ((CardLayout) getLayout()).show(this, "status_panel");
         }
-
-        clearHints();
     }
 
     private void scheduleMatch() {
@@ -703,8 +687,6 @@ public class MatchPanel extends JPanel {
 
         mPlayer1Hint = null;
         mPlayer2Hint = null;
-
-        refreshPanel();
     }
 
     private void indicateWinner(final Member winner) {
@@ -725,6 +707,12 @@ public class MatchPanel extends JPanel {
             }
         });
 
-        refreshPanel();
+        if (mOriginalSlot == 0) {
+            for (MatchPanel otherMatch : mSameCourt) {
+                otherMatch.nextSlot();
+            }
+        } else {
+            refreshPanel();
+        }
     }
 }

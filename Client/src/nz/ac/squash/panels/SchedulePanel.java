@@ -9,12 +9,18 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import nz.ac.squash.db.DB;
+import nz.ac.squash.db.DB.Transaction;
+import nz.ac.squash.db.beans.Match;
+import nz.ac.squash.db.beans.MatchResult;
+import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.MatchPanel;
 import nz.ac.squash.widget.generic.VTextIcon;
 import nz.ac.squash.widget.generic.VerticalGridLayout;
@@ -22,14 +28,15 @@ import nz.ac.squash.widget.generic.VerticalGridLayout;
 public class SchedulePanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
+    private static final int[] COURTS = new int[] { 5, 6, 7, 8, 1, 2, 3, 4 };
+    private static final int SLOTS = 6;
+
     private MatchPanel[][] mMatchPanels;
     private JPanel mMatchGrid;
 
     public SchedulePanel() {
         createContents();
 
-        int[] COURTS = new int[] { 5, 6, 7, 8, 1, 2, 3, 4 };
-        int SLOTS = 6;
         mMatchPanels = new MatchPanel[COURTS.length][SLOTS];
 
         List<MatchPanel>[] courtGroups = (List<MatchPanel>[]) new List<?>[COURTS.length];
@@ -43,15 +50,20 @@ public class SchedulePanel extends JPanel {
             courtGroups[i] = new ArrayList<>();
         }
 
-        for (int court = 0; court < COURTS.length; court++) {
-            for (int slot = 0; slot < SLOTS; slot++) {
-                MatchPanel matchPanel = mMatchPanels[court][slot] = new MatchPanel(
-                        COURTS[court], slot - 2, courtGroups[court],
-                        slotGroups[slot]);
+        for (int c = 0; c < COURTS.length; c++) {
+            final int court = COURTS[c];
+            int startingSlot = findStartingSlot(court);
+
+            for (int s = 0; s < SLOTS; s++) {
+                final int slot = s - 2;
+
+                MatchPanel matchPanel = mMatchPanels[c][s] = new MatchPanel(
+                        court, slot, slot + startingSlot, courtGroups[c],
+                        slotGroups[s]);
 
                 mMatchGrid.add(matchPanel);
-                courtGroups[court].add(matchPanel);
-                slotGroups[slot].add(matchPanel);
+                courtGroups[c].add(matchPanel);
+                slotGroups[s].add(matchPanel);
             }
         }
 
@@ -328,5 +340,38 @@ public class SchedulePanel extends JPanel {
                 mMatchPanels[court][slot].checkForCollisions();
             }
         }
+    }
+
+    private static int findStartingSlot(final int court) {
+        final Date today = Utility.today();
+
+        return DB.executeTransaction(new Transaction<Integer>() {
+            @Override
+            public void run() {
+                int slot = 0;
+
+                // Start after every game that has finished.
+                MatchResult latestResult = Utility
+                        .first(query(
+                                MatchResult.class,
+                                "r where r.mMatch.mDate >= ?0 and r.mMatch.mCourt = ?1 order by r.mMatch.mTimeSlot desc",
+                                today, court));
+                if (latestResult != null) {
+                    slot = latestResult.getMatch().getTimeSlot() + 1;
+                }
+
+                // Start on first game without a result.
+                Match nextGame = Utility
+                        .first(query(
+                                Match.class,
+                                "m where m.mDate >= ?0 and m.mCourt = ?1 and m.mTimeSlot >= ?2 order by m.mTimeSlot asc",
+                                today, court, slot));
+                if (nextGame != null) {
+                    slot = nextGame.getTimeSlot();
+                }
+
+                setResult(slot);
+            }
+        });
     }
 }
