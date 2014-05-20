@@ -42,7 +42,9 @@ public class Member {
     private String mSignupMethod;
 
     private String mStudentStatus;
+
     private String mPaymentMethod;
+    private String mHasPaid;
 
     public long getID() {
         return mID;
@@ -118,6 +120,14 @@ public class Member {
 
     public void setPaymentMethod(String mPaymentMethod) {
         this.mPaymentMethod = mPaymentMethod;
+    }
+
+    public String getHasPaid() {
+        return mHasPaid;
+    }
+
+    public void setHasPaid(String hasPaid) {
+        this.mHasPaid = hasPaid;
     }
 
     public String getSignupMethod() {

@@ -15,6 +15,9 @@ public class Utility {
     public static final DateFormat SPREADSHEET_FORMATTER = new SimpleDateFormat(
             "dd/MM/yyyy HH:mm:ss");
 
+    public static final DateFormat DATE_ONLY_FORMATTER = new SimpleDateFormat(
+            "dd/MM/yyyy");
+
     @SafeVarargs
     public static <T> T firstNonNull(T... objects) {
         for (T t : objects) {
