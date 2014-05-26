@@ -50,6 +50,10 @@ public class Importer {
                         imported.setSignupMethod(lineParts[9]);
                     }
 
+                    if (lineParts.length >= 12) {
+                        imported.setHasPaid(lineParts[11]);
+                    }
+
                     if (imported.isActive()) {
                         DB.queueTransaction(new DB.Transaction<Void>() {
                             @Override
@@ -63,8 +67,10 @@ public class Importer {
                                     update(imported);
                                     sLogger.info("Imported new member " +
                                                  imported.getNameFormatted());
-                                } else {
-                                    // TODO Update DB from CSV.
+                                } else if (existing.updateFrom(imported)) {
+                                    update(existing);
+                                    sLogger.info("Updated member " +
+                                                 imported.getNameFormatted());
                                 }
                             }
                         });

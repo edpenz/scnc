@@ -16,6 +16,7 @@ import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.util.Tuple;
+import nz.ac.squash.util.Utility;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -161,6 +162,39 @@ public class Member {
     @Override
     public String toString() {
         return getNameFormatted();
+    }
+
+    public boolean updateFrom(Member other) {
+        boolean changed = false;
+
+        if (!Utility.eqOrNull(mActive, other.mActive)) {
+            changed = true;
+            mActive = other.mActive;
+        }
+
+        if (!Utility.eqOrNull(mStudentId, other.mStudentId)) {
+            changed = true;
+            mStudentId = other.mStudentId;
+        }
+        if (!Utility.eqOrNull(mName, other.mName)) {
+            changed = true;
+            mName = other.mName;
+        }
+        if (!Utility.eqOrNull(mUPI, other.mUPI)) {
+            changed = true;
+            mUPI = other.mUPI;
+        }
+        if (!Utility.eqOrNull(mEmail, other.mEmail)) {
+            changed = true;
+            mEmail = other.mEmail;
+        }
+
+        if (!Utility.eqOrNull(mHasPaid, other.mHasPaid)) {
+            changed = true;
+            mHasPaid = other.mHasPaid;
+        }
+
+        return changed;
     }
 
     public String getNameFormatted() {
