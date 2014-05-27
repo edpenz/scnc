@@ -370,19 +370,19 @@ public class ChallengeWindow extends JDialog {
             @Override
             public void run() {
                 // Ignore challenge if identical one is already pending.
-                boolean alreadyPending = !query(
+                boolean nonePending = query(
                         MatchHintRequest.class,
-                        "h where h.mDate >= ?0 and ((h.mPlayer1 = ?1 and h.mPlayer2 = ?2) or (h.mPlayer1 = ?2 and h.mPlayer2 = ?1))",
+                        "h where h.mDate >= ?0 and h.mSatisfiedBy = null and ((h.mPlayer1 = ?1 and h.mPlayer2 = ?2) or (h.mPlayer1 = ?2 and h.mPlayer2 = ?1))",
                         Utility.today(), mPlayer1, mPlayer2).isEmpty();
 
                 // Make the request.
-                if (alreadyPending) {
+                if (nonePending) {
+                    MatchHintRequest.createRequest(mPlayer1, mPlayer2);
+                } else {
                     sLogger.info("Ignoring request between " +
                                  mPlayer1.getNameFormatted() + " and " +
                                  mPlayer2.getNameFormatted() +
                                  " because a similar request is already pending");
-                } else {
-                    MatchHintRequest.createRequest(mPlayer1, mPlayer2);
                 }
             }
         });
