@@ -2,9 +2,7 @@ package nz.ac.squash.db.beans;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -14,7 +12,6 @@ import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
-import nz.ac.squash.util.Utility;
 
 @Entity
 @Table(name = "match_result")
@@ -95,10 +92,6 @@ public class MatchResult {
                 .getNameFormatted() : "noone";
     }
 
-    private static String getSkill(Member member, MemberStatus status) {
-        return status != null ? status.getSkillLevel() : member.getSkillLevel();
-    }
-
     // Adds a user to the ladder if they have not been already.
     public static void addToLadder(final Member member) {
         DB.queueTransaction(new Transaction<Void>() {
@@ -108,42 +101,7 @@ public class MatchResult {
                 if (!query(MatchResult.class, "r where mWinner_mID = ?0",
                         member).isEmpty()) return;
 
-                final Map<Member, MemberStatus> memberStatuses = new HashMap<>();
-                for (MemberStatus status : MemberStatus.getLatestCheckins()) {
-                    memberStatuses.put(status.getMember(), status);
-                }
-
-                final String skill = getSkill(member,
-                        memberStatuses.get(member));
-                final List<Member> ladder = getLadder();
-
-                int worseThan = 0;
-                for (int i = 0; i < ladder.size(); i++) {
-                    final Member other = ladder.get(i);
-
-                    String otherSkill = getSkill(other,
-                            memberStatuses.get(other));
-                    if (Utility.compareSkill(skill, otherSkill) >= 0) {
-                        worseThan = i;
-                    }
-                }
-
-                int betterThan = ladder.size();
-                for (int i = ladder.size() - 1; i >= 0; --i) {
-                    final Member other = ladder.get(i);
-
-                    String otherSkill = getSkill(other,
-                            memberStatuses.get(other));
-                    if (Utility.compareSkill(skill, otherSkill) < 0) {
-                        betterThan = i;
-                    }
-                }
-
-                int estPlace = (betterThan + worseThan + 1) / 2;
-
-                final Member placeBefore = estPlace < ladder.size() ? ladder
-                        .get(estPlace) : null;
-                update(new MatchResult(member, placeBefore));
+                update(new MatchResult(member, (Member) null));
             }
         });
     }
