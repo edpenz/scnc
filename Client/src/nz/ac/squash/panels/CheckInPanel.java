@@ -16,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.LadderEntry;
 import nz.ac.squash.widget.generic.JTextField;
 import nz.ac.squash.widget.generic.VerticalGridLayout;
@@ -529,8 +531,12 @@ public class CheckInPanel extends JPanel {
         DB.queueTransaction(new Transaction<Void>() {
             @Override
             public void run() {
+                final Date today = Utility.today();
+                final Date mustHaveAttendedSince = new Date(System
+                        .currentTimeMillis() - 1000l * 60 * 60 * 24 * 7 * 4);
+
                 final Map<Member, MemberStatus> memberStatuses = new HashMap<>();
-                for (MemberStatus status : MemberStatus.getPresentMembers()) {
+                for (MemberStatus status : MemberStatus.getLatestStatus()) {
                     memberStatuses.put(status.getMember(), status);
                 }
 
@@ -545,7 +551,13 @@ public class CheckInPanel extends JPanel {
                 for (final Member member : ladder) {
                     // Get status of member.
                     MemberStatus status = memberStatuses.get(member);
-                    boolean present = status != null && status.isPresent();
+                    boolean present = status != null && status.isPresent() &&
+                                      status.getDate().compareTo(today) > 0;
+
+                    boolean recent = status != null &&
+                                     status.getDate().compareTo(
+                                             mustHaveAttendedSince) > 0;
+                    if (!recent) continue;
 
                     // Create UI entry.
                     LadderEntry entry = new LadderEntry(i + 1, member, present);

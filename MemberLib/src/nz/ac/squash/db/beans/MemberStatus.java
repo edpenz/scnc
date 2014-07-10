@@ -170,4 +170,20 @@ public class MemberStatus {
                     }
                 });
     }
+
+    public static Collection<MemberStatus> getLatestStatus() {
+        return DB
+                .executeTransaction(new Transaction<Collection<MemberStatus>>() {
+                    @Override
+                    public void run() {
+                        setResult(typedQuery(
+                                MemberStatus.class,
+                                "select s from " +
+                                        MemberStatus.class.getName() +
+                                        " as s where s.mDate = (select max(mDate) from " +
+                                        MemberStatus.class.getName() +
+                                        " as m where s.mMember = m.mMember)"));
+                    }
+                });
+    }
 }
