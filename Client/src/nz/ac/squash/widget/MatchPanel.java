@@ -711,6 +711,12 @@ public class MatchPanel extends JPanel {
             for (MatchPanel otherMatch : mSameCourt) {
                 otherMatch.nextSlot();
             }
+
+            for (MatchPanel outer : mSameSlot) {
+                for (MatchPanel inner : outer.mSameCourt) {
+                    inner.checkForCollisions();
+                }
+            }
         } else {
             refreshPanel();
 
