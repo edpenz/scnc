@@ -8,6 +8,8 @@ import java.util.concurrent.BlockingQueue;
 import nz.ac.squash.util.Utility;
 
 import org.apache.log4j.Logger;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -115,6 +117,8 @@ public class DB {
         }
 
         private void begin() {
+            sSessionFactory.getCache().evictAllRegions();
+
             mSession = sSessionFactory.openSession();
             mSession.beginTransaction();
         }
@@ -124,6 +128,8 @@ public class DB {
                 if (mIsDirty) {
                     mSession.getTransaction().commit();
                 }
+            } catch (Exception e) {
+                throw e;
             } finally {
                 mSession.close();
 
@@ -232,6 +238,11 @@ public class DB {
         @SuppressWarnings("unchecked")
         protected <T> T get(Class<T> clazz, long id) {
             return (T) mSession.get(clazz, id);
+        }
+
+        protected void attach(Object object) {
+            final LockOptions opts = new LockOptions(LockMode.NONE);
+            mSession.buildLockRequest(opts).lock(object);
         }
 
         protected void update(Object object) {

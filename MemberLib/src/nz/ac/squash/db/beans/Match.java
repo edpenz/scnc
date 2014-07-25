@@ -113,7 +113,7 @@ public class Match {
     @Override
     public String toString() {
         return mPlayer1.getNameFormatted() + " vs. " +
-               mPlayer2.getNameFormatted();
+               mPlayer2.getNameFormatted() + " (#" + mID + ")";
     }
 
     public void cancel() {
@@ -121,6 +121,7 @@ public class Match {
             @Override
             public void run() {
                 sLogger.info("Cancelling match: " + Match.this);
+                attach(Match.this);
 
                 // Re-enable hints satisfied by this match.
                 for (MatchHint hint : query(MatchHint.class,
@@ -139,8 +140,7 @@ public class Match {
                     sLogger.info("  which had result: " + result);
                 }
 
-                // Can only delete object from same session.
-                delete(get(Match.class, mID));
+                delete(Match.this);
             }
         });
     }

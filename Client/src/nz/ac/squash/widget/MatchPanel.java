@@ -687,6 +687,10 @@ public class MatchPanel extends JPanel {
 
         mPlayer1Hint = null;
         mPlayer2Hint = null;
+
+        mPlayer1Field.setEditable(true);
+        mPlayer2Field.setEditable(true);
+        mScheduleButton.setEnabled(true);
     }
 
     private void indicateWinner(final Member winner) {
