@@ -32,8 +32,9 @@ import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Match;
 import nz.ac.squash.db.beans.MatchHint;
-import nz.ac.squash.db.beans.MatchHintTempIncludePlayer;
-import nz.ac.squash.db.beans.MatchHintTempVeto;
+import nz.ac.squash.db.beans.TempHintImplicitlyExcludePlayer;
+import nz.ac.squash.db.beans.TempHintExplicitlyIncludePlayer;
+import nz.ac.squash.db.beans.TempHintVeto;
 import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
@@ -321,7 +322,7 @@ public class MatchPanel extends JPanel {
                                         !results.get(0).equals(mPlayer2Hint)) {
                                         mPlayer1Hint = results.get(0);
                                         mTempHints
-                                                .add(new MatchHintTempIncludePlayer(
+                                                .add(new TempHintExplicitlyIncludePlayer(
                                                         mPlayer1Hint));
 
                                         mPlayer1Field.setText(mPlayer1Hint
@@ -416,7 +417,7 @@ public class MatchPanel extends JPanel {
                                         !results.get(0).equals(mPlayer1Hint)) {
                                         mPlayer2Hint = results.get(0);
                                         mTempHints
-                                                .add(new MatchHintTempIncludePlayer(
+                                                .add(new TempHintExplicitlyIncludePlayer(
                                                         mPlayer2Hint));
 
                                         mPlayer2Field.setText(mPlayer2Hint
@@ -616,7 +617,7 @@ public class MatchPanel extends JPanel {
     private void scheduleMatch() {
         // Veto the current match if rescheduling.
         if (mMatch != null) {
-            mTempHints.add(new MatchHintTempVeto(mMatch.getPlayer1(), mMatch
+            mTempHints.add(new TempHintVeto(mMatch.getPlayer1(), mMatch
                     .getPlayer2()));
             cancelMatch();
         }
@@ -628,8 +629,22 @@ public class MatchPanel extends JPanel {
                     mSlot);
             mNoMoreMatches = true;
         } else {
+            final Set<Member> concurrentMembers = new HashSet<>();
+            for (MatchPanel panel : mSameSlot) {
+                if (panel.mMatch != null) {
+                    concurrentMembers.add(panel.mMatch.getPlayer1());
+                    concurrentMembers.add(panel.mMatch.getPlayer2());
+                }
+            }
+
+            // Add anti-collision hints.
+            final Set<MatchHint> allHints = new HashSet<>(mTempHints);
+            for (Member member : concurrentMembers) {
+                allHints.add(new TempHintImplicitlyExcludePlayer(member));
+            }
+
             // Find by internal algorithm.
-            mMatch = Match.createMatch(mCourt, mSlot, mTempHints);
+            mMatch = Match.createMatch(mCourt, mSlot, allHints);
             mNoMoreMatches = mMatch == null;
         }
 
@@ -657,7 +672,7 @@ public class MatchPanel extends JPanel {
                         .getPlayer1()) ? mMatch.getPlayer2() : mMatch
                         .getPlayer1();
 
-                mTempHints.add(new MatchHintTempIncludePlayer(remainingMember));
+                mTempHints.add(new TempHintExplicitlyIncludePlayer(remainingMember));
 
                 // Find a new match.
                 scheduleMatch();

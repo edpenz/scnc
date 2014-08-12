@@ -2,13 +2,13 @@ package nz.ac.squash.db.beans;
 
 import nz.ac.squash.util.Tuple;
 
-public class MatchHintTempIncludePlayer extends MatchHint {
+public class TempHintExplicitlyIncludePlayer extends MatchHint {
     @Override
     public String toString() {
         return "Include " + getPlayer1().getNameFormatted();
     }
 
-    public MatchHintTempIncludePlayer(Member player1) {
+    public TempHintExplicitlyIncludePlayer(Member player1) {
         setPlayer1(player1);
     }
 
@@ -31,8 +31,8 @@ public class MatchHintTempIncludePlayer extends MatchHint {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof MatchHintTempIncludePlayer)) return false;
-        final MatchHintTempIncludePlayer other = (MatchHintTempIncludePlayer) obj;
+        if (!(obj instanceof TempHintExplicitlyIncludePlayer)) return false;
+        final TempHintExplicitlyIncludePlayer other = (TempHintExplicitlyIncludePlayer) obj;
 
         return getPlayer1().equals(other.getPlayer1());
     }
@@ -44,6 +44,7 @@ public class MatchHintTempIncludePlayer extends MatchHint {
 
     @Override
     public boolean overrules(MatchHint otherHint, Tuple<Member, Member> match) {
+        // Overrides hints for specific games.
         if (otherHint instanceof MatchHintRequest) {
             final MatchHintRequest other = (MatchHintRequest) otherHint;
 
@@ -52,6 +53,11 @@ public class MatchHintTempIncludePlayer extends MatchHint {
             boolean theyVeto = other.vetosMatch(match.getA(), match.getB());
 
             return weSatisfy && theyVeto;
+        }
+
+        // Override implicit exclude hints that target this player.
+        if (otherHint instanceof TempHintImplicitlyExcludePlayer) {
+            return otherHint.getPlayer1().equals(getPlayer1());
         }
 
         return false;

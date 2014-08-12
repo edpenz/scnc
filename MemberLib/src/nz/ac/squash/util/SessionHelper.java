@@ -16,9 +16,6 @@ import nz.ac.squash.db.beans.MemberStatus;
 public class SessionHelper {
     private static SessionHelper sCurrent = null;
 
-    private SessionHelper() {
-    }
-
     public synchronized static SessionHelper current() {
         if (sCurrent == null) {
             sCurrent = new SessionHelper();
@@ -26,8 +23,12 @@ public class SessionHelper {
         return sCurrent;
     }
 
+    // Number of games biasing.
     private static final int sMaximumAbsoluteBias = 1;
     private Map<Member, Float> mAverageGameDeviation = null;
+
+    private SessionHelper() {
+    }
 
     public int getMemberBias(Member member) {
         if (mAverageGameDeviation == null) {

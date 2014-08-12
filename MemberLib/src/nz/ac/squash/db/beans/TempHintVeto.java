@@ -2,14 +2,14 @@ package nz.ac.squash.db.beans;
 
 import nz.ac.squash.util.Tuple;
 
-public class MatchHintTempVeto extends MatchHint {
+public class TempHintVeto extends MatchHint {
     @Override
     public String toString() {
         return "Veto " + getPlayer1().getNameFormatted() + " vs. " +
                getPlayer2().getNameFormatted();
     }
 
-    public MatchHintTempVeto(Member player1, Member player2) {
+    public TempHintVeto(Member player1, Member player2) {
         setPlayer1(player1);
         setPlayer2(player2);
     }
@@ -40,8 +40,8 @@ public class MatchHintTempVeto extends MatchHint {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof MatchHintTempVeto)) return false;
-        final MatchHintTempVeto other = (MatchHintTempVeto) obj;
+        if (!(obj instanceof TempHintVeto)) return false;
+        final TempHintVeto other = (TempHintVeto) obj;
 
         return getPlayer1().equals(other.getPlayer1()) &&
                getPlayer2().equals(other.getPlayer2()) ||

@@ -245,8 +245,7 @@ public class Match {
             int deltaIsRequest = (o1.IsRequested ? 0 : 1) -
                                  (o2.IsRequested ? 0 : 1);
 
-            // Prefer matches for players who have played significantly
-            // less
+            // Prefer matches for players who have played significantly less
             // frequently.
             if (Math.abs(deltaTotalMatches) > 1) return deltaTotalMatches;
 
