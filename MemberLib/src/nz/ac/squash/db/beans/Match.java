@@ -179,58 +179,14 @@ public class Match {
 
     private static class MatchProperties {
         public float SkillDifference;
-        public int MatchesPlayedToday;
-        public int PairedMatchesToday;
-        public int PairedMatches;
+        public int TimesAlreadyPaired;
         public boolean IsRequested;
+
+        public int CombinedMatchCount;
+        public int MinimumMatchCount;
     }
 
-    public static final Comparator<MatchProperties> WEIGHTED_COMPARATOR = new Comparator<MatchProperties>() {
-        private float fairness(MatchProperties o) {
-            return o.MatchesPlayedToday;
-        }
-
-        private float funness(MatchProperties o) {
-            final float skillDifference = Math.abs(o.SkillDifference);
-            final int pairedMatchesToday = o.PairedMatchesToday;
-            final int allPairedMatches = o.PairedMatches;
-            final int matchesToday = o.MatchesPlayedToday;
-            final boolean isRequest = o.IsRequested;
-
-            float funness = 0.f; // The lower the better.
-
-            // Playing the same person on the same night isn't fun.
-            funness += pairedMatchesToday;
-
-            // Playing someone much better/worse isn't fun (unless you
-            // want to).
-            if (!isRequest) funness += skillDifference * .75f;
-
-            // Playing people from the past is slightly not fun.
-            funness += allPairedMatches * .25f;
-
-            // Not getting games is not fun.
-            funness += matchesToday;
-
-            return funness;
-        }
-
-        @Override
-        public int compare(MatchProperties o1, MatchProperties o2) {
-            if (o1 == null) return 1;
-            else if (o2 == null) return -1;
-
-            float deltaFairness = fairness(o1) - fairness(o2);
-            float deltaFunness = funness(o1) - funness(o2);
-
-            if (Math.abs(deltaFairness) > 1 || deltaFunness == 0.f) return (int) Math
-                    .signum(deltaFairness);
-
-            return (int) Math.signum(deltaFunness);
-        }
-    };
-
-    public static final Comparator<MatchProperties> LADDER_COMPARATOR = new Comparator<MatchProperties>() {
+    public static final Comparator<MatchProperties> FAIR_COMPARATOR = new Comparator<MatchProperties>() {
         @Override
         public int compare(MatchProperties o1, MatchProperties o2) {
             if (o1 == null) return 1;
@@ -238,16 +194,17 @@ public class Match {
 
             float deltaSkillDifference = o1.SkillDifference -
                                          o2.SkillDifference;
-            int deltaTotalMatches = o1.MatchesPlayedToday -
-                                    o2.MatchesPlayedToday;
-            int deltaPairedMatches = o1.PairedMatchesToday -
-                                     o2.PairedMatchesToday;
+            int deltaTotalMatches = o1.CombinedMatchCount -
+                                    o2.CombinedMatchCount;
+            int deltaMinMatches = o1.MinimumMatchCount - o2.MinimumMatchCount;
+            int deltaPairedMatches = o1.TimesAlreadyPaired -
+                                     o2.TimesAlreadyPaired;
             int deltaIsRequest = (o1.IsRequested ? 0 : 1) -
                                  (o2.IsRequested ? 0 : 1);
 
-            // Prefer matches for players who have played significantly less
-            // frequently.
+            // Prefer matches for players who have played less frequently.
             if (Math.abs(deltaTotalMatches) > 1) return deltaTotalMatches;
+            if (Math.abs(deltaMinMatches) > 1) return deltaMinMatches;
 
             // Prefer requests.
             if (deltaIsRequest != 0) return deltaIsRequest;
@@ -267,6 +224,14 @@ public class Match {
         Integer count = map.get(key);
         count = Utility.firstNonNull(count, 0);
         map.put(key, count + 1);
+    }
+
+    private static float deltaSkill(Map<Member, Integer> ladder,
+            Member memberA, Member memberB) {
+        final int aPos = ladder.get(memberA);
+        final int bPos = ladder.get(memberB);
+
+        return (Math.abs(aPos - bPos) + 1.f) / ladder.size();
     }
 
     public static Match createMatch(final int court, final int slot,
@@ -293,13 +258,10 @@ public class Match {
 
                 // Count how many matches each player has had.
                 final Map<Member, Integer> todaysMatchCounts = new HashMap<>();
-                final Map<Tuple<Member, Member>, Integer> allPairedMatchCounts = new HashMap<>();
                 final Map<Tuple<Member, Member>, Integer> todaysPairedMatchCounts = new HashMap<>();
                 for (Match match : listAll(Match.class)) {
                     final Tuple<Member, Member> pairing = Member.orderedPair(
                             match.getPlayer1(), match.getPlayer2());
-
-                    incCount(allPairedMatchCounts, pairing);
 
                     if (match.getDate().after(today)) {
                         incCount(todaysMatchCounts, match.mPlayer1);
@@ -315,6 +277,12 @@ public class Match {
                     if (extraHints != null) {
                         matchHints.addAll(extraHints);
                     }
+                }
+
+                // Get ladder of present members.
+                final Map<Member, Integer> ladder = new HashMap<>();
+                for (Member member : MatchResult.getLadder()) {
+                    ladder.put(member, ladder.size());
                 }
 
                 // Iterate over each player pairing and compute score.
@@ -373,29 +341,26 @@ public class Match {
                         // Compute properties of potential match.
                         final MatchProperties score = new MatchProperties();
                         {
-                            score.SkillDifference = Utility
-                                    .deltaSkill(memberStatuses.get(player1)
-                                            .getSkillLevel(), memberStatuses
-                                            .get(player2).getSkillLevel());
+                            score.SkillDifference = deltaSkill(ladder, player1,
+                                    player2);
 
                             Integer player1MatchCount = Utility.firstNonNull(
                                     todaysMatchCounts.get(player1), 0);
                             Integer player2MatchCount = Utility.firstNonNull(
                                     todaysMatchCounts.get(player2), 0);
-                            score.MatchesPlayedToday = player1MatchCount +
+                            score.CombinedMatchCount = player1MatchCount +
                                                        player2MatchCount;
+                            score.MinimumMatchCount = Math.min(
+                                    player1MatchCount, player2MatchCount);
 
-                            score.PairedMatchesToday = Utility.firstNonNull(
+                            score.TimesAlreadyPaired = Utility.firstNonNull(
                                     todaysPairedMatchCounts.get(pairing), 0);
-
-                            score.PairedMatches = Utility.firstNonNull(
-                                    allPairedMatchCounts.get(pairing), 0);
 
                             score.IsRequested = satisfies;
                         }
 
                         // Pick best so far.
-                        if (LADDER_COMPARATOR.compare(bestMatchScore, score) > 0) {
+                        if (FAIR_COMPARATOR.compare(bestMatchScore, score) > 0) {
                             bestMatch = pairing;
                             bestMatchScore = score;
                         }
