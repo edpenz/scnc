@@ -11,13 +11,16 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.Date;
 
+import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -91,6 +94,15 @@ public class ClientWindow extends JFrame {
         createContents();
 
         // setSize(Toolkit.getDefaultToolkit().getScreenSize());
+
+        getRootPane().getActionMap().put("stats", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StatsWindow.showDialog(ClientWindow.this);
+            }
+        });
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "stats");
     }
 
     private void createContents() {

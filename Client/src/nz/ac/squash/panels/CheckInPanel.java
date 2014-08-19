@@ -43,6 +43,7 @@ import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.LadderEntry;
 import nz.ac.squash.widget.generic.JTextField;
@@ -499,11 +500,13 @@ public class CheckInPanel extends JPanel {
             }
         });
 
+        SessionHelper.current().invalidateLadder();
+
         // Update ladder.
+        SessionHelper.current().invalidateLadder();
         if (mLadderMapping.containsKey(mSelectedMember)) {
             LadderEntry entry = mLadderMapping.get(mSelectedMember);
             entry.setPresent(present);
-            entry.flash();
         } else {
             refreshLadder();
         }
@@ -540,7 +543,8 @@ public class CheckInPanel extends JPanel {
                     memberStatuses.put(status.getMember(), status);
                 }
 
-                final Collection<Member> ladder = MatchResult.getLadder();
+                final Collection<Member> ladder = SessionHelper.current()
+                        .getLadder();
 
                 // Make a static copy of the ladder widget list.
                 final List<LadderEntry> entries = new ArrayList<>();

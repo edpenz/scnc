@@ -5,8 +5,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
-import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
+import nz.ac.squash.util.SessionHelper;
 
 public class MakeLadder {
 
@@ -14,7 +14,7 @@ public class MakeLadder {
         File ladderFile = new File("logs/ladder.csv");
         FileWriter fw = new FileWriter(ladderFile);
 
-        List<Member> ladder = MatchResult.getLadder();
+        List<Member> ladder = SessionHelper.current().getLadder();
         int i = 1;
         for (Member member : ladder) {
             fw.write(i + ", " + member.getNameFormatted() + "\r\n");

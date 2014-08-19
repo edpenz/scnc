@@ -16,6 +16,7 @@ import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
+import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.Tuple;
 import nz.ac.squash.util.Utility;
 
@@ -136,6 +137,7 @@ public class Match {
                 for (MatchResult result : query(MatchResult.class,
                         "r where r.mMatch = ?0", Match.this)) {
                     delete(result);
+                    SessionHelper.current().invalidateLadder();
 
                     sLogger.info("  which had result: " + result);
                 }
@@ -281,7 +283,7 @@ public class Match {
 
                 // Get ladder of present members.
                 final Map<Member, Integer> ladder = new HashMap<>();
-                for (Member member : MatchResult.getLadder()) {
+                for (Member member : SessionHelper.current().getLadder()) {
                     ladder.put(member, ladder.size());
                 }
 

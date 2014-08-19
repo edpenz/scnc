@@ -10,6 +10,7 @@ import java.util.Set;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.beans.Match;
+import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.MemberStatus;
 
@@ -144,5 +145,17 @@ public class SessionHelper {
             }
         }
         return weightedMatchCount;
+    }
+
+    // Ladder.
+    private List<Member> mLadder = null;
+
+    public synchronized List<Member> getLadder() {
+        if (mLadder == null) mLadder = MatchResult.getLadder();
+        return mLadder;
+    }
+
+    public synchronized void invalidateLadder() {
+        mLadder = null;
     }
 }

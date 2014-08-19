@@ -34,6 +34,7 @@ import javax.swing.SwingUtilities;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.beans.Member;
+import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 
 import org.apache.commons.io.IOUtils;
@@ -106,6 +107,8 @@ public class RegisterWindow extends JDialog {
 
         pack();
         setLocationRelativeTo(null);
+
+        SwingUtils.closeOnEscape(this);
     }
 
     private void createContents() {

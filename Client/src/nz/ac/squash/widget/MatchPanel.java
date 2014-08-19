@@ -32,14 +32,15 @@ import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Match;
 import nz.ac.squash.db.beans.MatchHint;
-import nz.ac.squash.db.beans.TempHintImplicitlyExcludePlayer;
-import nz.ac.squash.db.beans.TempHintExplicitlyIncludePlayer;
-import nz.ac.squash.db.beans.TempHintVeto;
 import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
+import nz.ac.squash.db.beans.TempHintExplicitlyIncludePlayer;
+import nz.ac.squash.db.beans.TempHintImplicitlyExcludePlayer;
+import nz.ac.squash.db.beans.TempHintVeto;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.generic.JTextField;
 
@@ -672,7 +673,8 @@ public class MatchPanel extends JPanel {
                         .getPlayer1()) ? mMatch.getPlayer2() : mMatch
                         .getPlayer1();
 
-                mTempHints.add(new TempHintExplicitlyIncludePlayer(remainingMember));
+                mTempHints.add(new TempHintExplicitlyIncludePlayer(
+                        remainingMember));
 
                 // Find a new match.
                 scheduleMatch();
@@ -725,6 +727,8 @@ public class MatchPanel extends JPanel {
                 }
             }
         });
+
+        SessionHelper.current().invalidateLadder();
 
         if (mOriginalSlot == 0) {
             for (MatchPanel otherMatch : mSameCourt) {

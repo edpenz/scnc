@@ -39,6 +39,7 @@ import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.generic.JTextField;
 
@@ -87,19 +88,13 @@ public class ChallengeWindow extends JDialog {
 
     private ChallengeWindow(Window parent) {
         super(parent, ModalityType.APPLICATION_MODAL);
-
-        setIconImage(Toolkit
-                .getDefaultToolkit()
-                .getImage(
-                        ChallengeWindow.class
-                                .getResource("/javax/swing/plaf/metal/icons/ocean/menu.gif")));
-
         createContents();
 
         pack();
         setLocationRelativeTo(null);
 
         getRootPane().setDefaultButton(mChallengeButton);
+        SwingUtils.closeOnEscape(this);
     }
 
     @Override
@@ -111,6 +106,12 @@ public class ChallengeWindow extends JDialog {
     }
 
     private void createContents() {
+
+        setIconImage(Toolkit
+                .getDefaultToolkit()
+                .getImage(
+                        ChallengeWindow.class
+                                .getResource("/javax/swing/plaf/metal/icons/ocean/menu.gif")));
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         getContentPane().setBackground(Color.WHITE);
         GridBagLayout gridBagLayout = new GridBagLayout();
