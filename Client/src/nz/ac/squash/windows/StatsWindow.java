@@ -175,6 +175,9 @@ public class StatsWindow extends JDialog {
             Integer count1 = matchCounts.get(match.getPlayer1());
             Integer count2 = matchCounts.get(match.getPlayer2());
 
+            if (count1 == null) count1 = 0;
+            if (count2 == null) count2 = 0;
+
             ++count1;
             ++count2;
 
@@ -188,6 +191,10 @@ public class StatsWindow extends JDialog {
                     entry.getValue() });
         }
 
-        mTable.setRowSorter(new TableRowSorter(model));
+        final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(
+                model);
+        mTable.setRowSorter(sorter);
+
+        sorter.toggleSortOrder(1);
     }
 }
