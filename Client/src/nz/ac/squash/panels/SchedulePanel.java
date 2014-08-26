@@ -10,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -373,5 +374,35 @@ public class SchedulePanel extends JPanel {
                 setResult(slot);
             }
         });
+    }
+
+    public Iterable<MatchPanel> getMatchPanels() {
+        return new Iterable<MatchPanel>() {
+            @Override
+            public Iterator<MatchPanel> iterator() {
+                return new Iterator<MatchPanel>() {
+                    private int i = 0;
+
+                    @Override
+                    public void remove() {
+                        throw new RuntimeException("Iterable is read-only");
+                    }
+
+                    @Override
+                    public MatchPanel next() {
+                        final int court = i / SLOTS;
+                        final int slot = i % SLOTS;
+                        ++i;
+
+                        return mMatchPanels[court][slot];
+                    }
+
+                    @Override
+                    public boolean hasNext() {
+                        return i < COURTS.length * SLOTS;
+                    }
+                };
+            }
+        };
     }
 }

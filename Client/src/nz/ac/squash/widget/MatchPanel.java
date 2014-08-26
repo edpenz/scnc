@@ -82,7 +82,7 @@ public class MatchPanel extends JPanel {
             if (!new Rectangle(getSize()).contains(loc)) {
                 mIsHovering = false;
                 clearHints();
-                switchPanel();
+                switchPanel(false);
             }
         }
 
@@ -90,7 +90,7 @@ public class MatchPanel extends JPanel {
         public void mouseEntered(MouseEvent arg0) {
             if (!mIsHovering) {
                 mIsHovering = true;
-                switchPanel();
+                switchPanel(false);
             }
         }
     };
@@ -121,8 +121,7 @@ public class MatchPanel extends JPanel {
 
         createContents();
 
-        recursivelyAddMouseListener(mSchedulePanelInner, mHoverListener);
-        recursivelyAddMouseListener(mReviewPanel, mHoverListener);
+        recursivelyAddMouseListener(this, mHoverListener);
 
         loadMatch();
     }
@@ -272,7 +271,7 @@ public class MatchPanel extends JPanel {
         gbc_mPlayer2WonButton.gridy = 2;
         mReviewPanel.add(mPlayer2WonButton, gbc_mPlayer2WonButton);
 
-        mDrawButton = new JButton("Draw / Clear");
+        mDrawButton = new JButton("Unfinished / Draw");
         mDrawButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent arg0) {
                 indicateWinner(null);
@@ -458,6 +457,11 @@ public class MatchPanel extends JPanel {
         }
     }
 
+    public void enableSchedule() {
+        // If hovering, show edit controls.
+        switchPanel(true);
+    }
+
     public void nextSlot() {
         mMatch = null;
         mResult = null;
@@ -492,7 +496,7 @@ public class MatchPanel extends JPanel {
         });
 
         refreshPanel();
-        switchPanel();
+        switchPanel(false);
     }
 
     public void checkForCollisions() {
@@ -603,11 +607,11 @@ public class MatchPanel extends JPanel {
         }
     }
 
-    private void switchPanel() {
-        if (mIsHovering && mOriginalSlot <= 0 && mMatch != null) {
-            ((CardLayout) getLayout()).show(this, "review_panel");
-        } else if (mIsHovering && mOriginalSlot >= 0) {
+    private void switchPanel(boolean edit) {
+        if (mIsHovering && edit) {
             ((CardLayout) getLayout()).show(this, "schedule_panel");
+        } else if (mIsHovering && mOriginalSlot <= 0 && mMatch != null) {
+            ((CardLayout) getLayout()).show(this, "review_panel");
         } else if (mMatch != null) {
             ((CardLayout) getLayout()).show(this, "game_info");
         } else {
@@ -704,6 +708,9 @@ public class MatchPanel extends JPanel {
 
         mPlayer1Hint = null;
         mPlayer2Hint = null;
+
+        mPlayer1Field.setText("");
+        mPlayer2Field.setText("");
 
         mPlayer1Field.setEditable(true);
         mPlayer2Field.setEditable(true);

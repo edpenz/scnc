@@ -29,6 +29,7 @@ import nz.ac.squash.panels.SchedulePanel;
 import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JBrandedPanel;
+import nz.ac.squash.widget.MatchPanel;
 import nz.ac.squash.widget.generic.JOverlay;
 
 import org.apache.log4j.BasicConfigurator;
@@ -103,6 +104,17 @@ public class ClientWindow extends JFrame {
         });
         getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "stats");
+
+        getRootPane().getActionMap().put("schedule", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                for (MatchPanel panel : mSchedulePanel.getMatchPanels()) {
+                    panel.enableSchedule();
+                }
+            }
+        });
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "schedule");
     }
 
     private void createContents() {
