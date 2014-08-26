@@ -264,7 +264,8 @@ public class Member {
                 DB.executeTransaction(new DB.Transaction<Void>() {
                     @Override
                     public void run() {
-                        for (Member member : listAll(Member.class)) {
+                        for (Member member : query(Member.class,
+                                "m where m.mActive = true")) {
                             members.put(member,
                                     Arrays.copyOf(baseMatch, baseMatch.length));
                         }

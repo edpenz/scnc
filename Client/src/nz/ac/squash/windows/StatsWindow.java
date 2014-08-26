@@ -2,6 +2,7 @@ package nz.ac.squash.windows;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -119,6 +120,7 @@ public class StatsWindow extends JDialog {
         getContentPane().add(scrollPane, gbc_scrollPane);
 
         mTable = new JTable();
+        mTable.setPreferredScrollableViewportSize(new Dimension(325, 300));
         scrollPane.setViewportView(mTable);
         mTable.setModel(new DefaultTableModel(new Object[][] {}, new String[] {
                 "Member", "Match Count" }) {
@@ -127,14 +129,8 @@ public class StatsWindow extends JDialog {
             public Class getColumnClass(int columnIndex) {
                 return columnTypes[columnIndex];
             }
-
-            boolean[] columnEditables = new boolean[] { false, false };
-
-            public boolean isCellEditable(int row, int column) {
-                return columnEditables[column];
-            }
         });
-        mTable.getColumnModel().getColumn(0).setPreferredWidth(125);
+        mTable.getColumnModel().getColumn(0).setPreferredWidth(250);
 
         JPanel panel = new JPanel();
         FlowLayout flowLayout = (FlowLayout) panel.getLayout();

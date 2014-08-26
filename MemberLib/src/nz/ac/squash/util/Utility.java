@@ -1,5 +1,6 @@
 package nz.ac.squash.util;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -49,6 +50,16 @@ public class Utility {
 
         if (it.hasNext()) return it.next();
         else return null;
+    }
+
+    public static void safeClose(Closeable... closeables) {
+        for (Closeable closeable : closeables) {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                // Ignore.
+            }
+        }
     }
 
     public static Date today() {

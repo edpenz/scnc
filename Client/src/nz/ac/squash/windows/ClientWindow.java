@@ -26,7 +26,6 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import nz.ac.squash.panels.CheckInPanel;
 import nz.ac.squash.panels.SchedulePanel;
-import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JBrandedPanel;
 import nz.ac.squash.widget.MatchPanel;
@@ -80,9 +79,6 @@ public class ClientWindow extends JFrame {
             // Fallback to default look-and-feel is fine.
         }
 
-        // Import data.
-        Importer.importFromCsv("db");
-
         // Start main GUI window.
         new ClientWindow().setVisible(true);
     }
@@ -115,6 +111,15 @@ public class ClientWindow extends JFrame {
         });
         getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "schedule");
+
+        getRootPane().getActionMap().put("import", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ImportWindow.showDialog(ClientWindow.this);
+            }
+        });
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), "import");
     }
 
     private void createContents() {
