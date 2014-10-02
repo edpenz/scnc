@@ -16,8 +16,6 @@ import nz.ac.squash.util.Utility;
 public class MakeLadder {
 
     public static void main(String[] args) throws IOException {
-        File ladderFile = new File("logs/ladder.csv");
-        FileWriter fw = new FileWriter(ladderFile);
 
         List<Member> ladder = SessionHelper.current().getLadder();
 
@@ -30,6 +28,8 @@ public class MakeLadder {
             }
         }
 
+        File ladderFile = new File("logs/ladder.csv");
+        FileWriter fw = new FileWriter(ladderFile);
         int i = 1;
         for (Member member : ladder) {
             if (!recentMembers.contains(member)) continue;
@@ -37,7 +37,15 @@ public class MakeLadder {
             fw.write(i + ", " + member.getNameFormatted() + "\r\n");
             ++i;
         }
+        fw.close();
 
+        File bigLadderFile = new File("logs/ladder_full.csv");
+        fw = new FileWriter(bigLadderFile);
+        i = 1;
+        for (Member member : ladder) {
+            fw.write(i + ", " + member.getNameFormatted() + "\r\n");
+            ++i;
+        }
         fw.close();
 
         System.exit(0);
