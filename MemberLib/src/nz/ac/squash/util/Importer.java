@@ -65,6 +65,7 @@ public class Importer {
 
         private String mNewName = null;
         private Boolean mNewActive = null;
+        private String mHasPaid = null;
 
         public static ImportActionUpdate tryCreate(Member oldInfo,
                 Member newInfo) {
@@ -83,6 +84,11 @@ public class Importer {
                 hasAnEffect = true;
             }
 
+            if (!Utility.eqOrNull(oldInfo.getHasPaid(), newInfo.getHasPaid())) {
+                action.mHasPaid = newInfo.getHasPaid();
+                hasAnEffect = true;
+            }
+
             return hasAnEffect ? action : null;
         }
 
@@ -93,6 +99,7 @@ public class Importer {
                 public void run() {
                     if (mNewName != null) mMember.setName(mNewName);
                     if (mNewActive != null) mMember.setActive(mNewActive);
+                    if (mHasPaid != null) mMember.setHasPaid(mHasPaid);
 
                     update(mMember);
                     sLogger.info("Updated member " + mMember.getNameFormatted());
@@ -111,6 +118,9 @@ public class Importer {
 
             if (mNewName != null) builder.append("Name changed to \"")
                     .append(mNewName).append("\", ");
+
+            if (mHasPaid != null) builder.append("Paid: ").append(
+                    mHasPaid);
 
             return builder.toString();
         }
