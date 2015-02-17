@@ -119,8 +119,7 @@ public class Importer {
             if (mNewName != null) builder.append("Name changed to \"")
                     .append(mNewName).append("\", ");
 
-            if (mHasPaid != null) builder.append("Paid: ").append(
-                    mHasPaid);
+            if (mHasPaid != null) builder.append("Paid: ").append(mHasPaid);
 
             return builder.toString();
         }
@@ -158,19 +157,17 @@ public class Importer {
 
                 imported.setName(lineParts[1]);
                 // imported.setSignupCause(lineParts[2]);
-                imported.setStudentStatus(lineParts[3]);
-                imported.setStudentIdAndUpi(lineParts[4]);
-                imported.setEmail(lineParts[5]);
+                imported.setEmail(lineParts[3]);
+                imported.setStudentStatus(lineParts[4]);
+                imported.setStudentIdAndUpi(lineParts[5]);
                 imported.setSkillLevel(lineParts[6]);
-                imported.setPaymentMethod(lineParts[7]);
 
                 // Optional fields.
-                if (lineParts.length > 8) {
-                    imported.setActive(StringUtils.isEmpty(lineParts[8]));
-                    imported.setSignupMethod(lineParts[9]);
+                if (lineParts.length > 9) {
+                    imported.setActive(StringUtils.isEmpty(lineParts[9]));
                 }
 
-                if (lineParts.length >= 12) {
+                if (lineParts.length > 11) {
                     imported.setHasPaid(lineParts[11]);
                 }
 
