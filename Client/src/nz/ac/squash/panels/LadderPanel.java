@@ -52,7 +52,7 @@ import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class CheckInPanel extends JPanel {
+public class LadderPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
     private JTextField mSearchField;
@@ -84,7 +84,7 @@ public class CheckInPanel extends JPanel {
 
     private final Map<Member, LadderEntry> mLadderMapping = new HashMap<Member, LadderEntry>();
 
-    public CheckInPanel() {
+    public LadderPanel() {
         createContents();
 
         refreshLadder();
@@ -180,7 +180,7 @@ public class CheckInPanel extends JPanel {
                         @Override
                         public void run() {
                             final MemberResults results = Member.searchMembers(
-                                    query, 5, 2, false);
+                                    query, 5, false);
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
                                 public void run() {
@@ -519,7 +519,7 @@ public class CheckInPanel extends JPanel {
         RegisterWindow.showDialog(this, new RegisterWindow.Callback() {
             @Override
             public void memberRegistered(Member member) {
-                CheckInPanel.this.memberRegistered(member);
+                LadderPanel.this.memberRegistered(member);
             }
         });
     }

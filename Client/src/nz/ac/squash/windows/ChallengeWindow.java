@@ -154,7 +154,7 @@ public class ChallengeWindow extends JDialog {
                         @Override
                         public void run() {
                             final MemberResults results = Member.searchMembers(
-                                    query, 5, 2, true);
+                                    query, 5, true);
 
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
@@ -215,7 +215,7 @@ public class ChallengeWindow extends JDialog {
                         @Override
                         public void run() {
                             final MemberResults results = Member.searchMembers(
-                                    query, 5, 2, true);
+                                    query, 5, true);
 
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override

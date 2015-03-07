@@ -313,7 +313,7 @@ public class MatchPanel extends JPanel {
                         @Override
                         public void run() {
                             final MemberResults results = Member.searchMembers(
-                                    query, 1, Integer.MAX_VALUE, true);
+                                    query, 1, true);
 
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
@@ -408,7 +408,7 @@ public class MatchPanel extends JPanel {
                         @Override
                         public void run() {
                             final MemberResults results = Member.searchMembers(
-                                    query, 1, Integer.MAX_VALUE, true);
+                                    query, 1, true);
 
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override

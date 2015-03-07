@@ -24,8 +24,8 @@ import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import nz.ac.squash.panels.CheckInPanel;
 import nz.ac.squash.panels.SchedulePanel;
+import nz.ac.squash.panels.SignInPanel;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JBrandedPanel;
 import nz.ac.squash.widget.MatchPanel;
@@ -85,7 +85,7 @@ public class ClientWindow extends JFrame {
 
     private JPanel mPanelFrame;
     private SchedulePanel mSchedulePanel;
-    private CheckInPanel mCheckinPanel;
+    private SignInPanel mSignInPanel;
 
     private ClientWindow() {
         createContents();
@@ -188,13 +188,14 @@ public class ClientWindow extends JFrame {
         gbc_panel_5.gridy = 0;
         panel_2.add(panel_5, gbc_panel_5);
 
-        JButton checkinButton = new JButton("Check-in / Ladder");
+        JButton checkinButton = new JButton("Sign in");
         checkinButton.setOpaque(false);
         checkinButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                showPanel(CheckInPanel.class);
-                mCheckinPanel.resetSearch();
-                mCheckinPanel.refreshLadder();
+                showPanel(SignInPanel.class);
+                mSignInPanel.clearSearch();
+                // mCheckinPanel.resetSearch();
+                // mCheckinPanel.refreshLadder();
             }
         });
         panel_5.setLayout(new GridLayout(1, 0, 10, 0));
@@ -209,6 +210,7 @@ public class ClientWindow extends JFrame {
         panel_5.add(scheduleButton);
         panel_5.add(checkinButton);
         JButton challengeButton = new JButton("Request a Match");
+        challengeButton.setEnabled(false);
         challengeButton.setOpaque(false);
         challengeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -239,8 +241,8 @@ public class ClientWindow extends JFrame {
         mSchedulePanel = new SchedulePanel();
         mPanelFrame.add(mSchedulePanel, SchedulePanel.class.getSimpleName());
 
-        mCheckinPanel = new CheckInPanel();
-        mPanelFrame.add(mCheckinPanel, CheckInPanel.class.getSimpleName());
+        mSignInPanel = new SignInPanel();
+        mPanelFrame.add(mSignInPanel, SignInPanel.class.getSimpleName());
     }
 
     private void showPanel(Class<?> panel) {

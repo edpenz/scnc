@@ -229,7 +229,7 @@ public class Member {
         for (int i = 0; i < input.length(); ++i) {
             final char c = input.charAt(i);
 
-            if (Character.isLetter(c)) {
+            if (Character.isLetterOrDigit(c)) {
                 b.append(Character.toLowerCase(c));
             } else if (Character.isWhitespace(c)) {
                 b.append(' ');
@@ -247,10 +247,19 @@ public class Member {
     }
 
     public static MemberResults searchMembers(String query, int topN,
-            int threshold, boolean presentOnly) {
+            boolean presentOnly) {
         // Tokenise query.
         List<String> queryTokens = Arrays.asList(StringUtils
                 .split(getNameStripped(query)));
+        if (queryTokens.isEmpty()) return new MemberResults();
+
+        int threshold = 0;
+        for (String token : queryTokens) {
+            int tokenThreshold = token.length() - 3;
+            tokenThreshold = Math.max(tokenThreshold, 0);
+            tokenThreshold = Math.min(tokenThreshold, 2);
+            threshold = Math.max(threshold, tokenThreshold);
+        }
 
         final int[] baseMatch = new int[queryTokens.size()];
         for (int i = 0; i < baseMatch.length; ++i) {
@@ -362,15 +371,13 @@ public class Member {
         }
 
         // Otherwise select top N results to return.
-        int bestScore = sortedMembers.isEmpty() ? 0 : sumScore(sortedMembers
-                .get(0).getValue());
-        for (int i = 0; toReturn.size() < topN && i < sortedMembers.size(); i++) {
-            int score = sumScore(sortedMembers.get(i).getValue());
+        for (int i = 0; toReturn.size() < topN && i < topN &&
+                        i < sortedMembers.size(); i++) {
+            final int[] score = sortedMembers.get(i).getValue();
+            final Member member = sortedMembers.get(i).getKey();
 
-            if (score <= bestScore + threshold) {
-                toReturn.add(sortedMembers.get(i).getKey());
-            } else {
-                break;
+            if (score[score.length - 1] <= threshold) {
+                toReturn.add(member);
             }
         }
 
