@@ -426,26 +426,14 @@ public class RegisterWindow extends JDialog {
         proto.setName(mNameField.getText());
         proto.setEmail(mEmailField.getText());
 
-        if (mSkill1Radio.isSelected()) proto.setSkillLevel("1");
-        else if (mSkill2Radio.isSelected()) proto.setSkillLevel("2");
-        else if (mSkill3Radio.isSelected()) proto.setSkillLevel("3");
-        else if (mSkill4Radio.isSelected()) proto.setSkillLevel("4");
-
         if (mStudentYesRadio.isSelected()) proto.setStudentStatus("Yes");
         else if (mStudentAlumniRadio.isSelected()) proto
                 .setStudentStatus("Alumni");
         else if (mStudentNoRadio.isSelected()) proto.setStudentStatus("No");
 
         proto.setStudentId(mStudentIdField.getText());
-        proto.setUPI(mUpiField.getText());
-
-        if (mPaymentCashRadio.isSelected()) proto
-                .setPaymentMethod("Cash at club night");
-        else if (mPaymentTransferRadio.isSelected()) proto
-                .setPaymentMethod("Bank transfer");
 
         proto.setSignupTime(Utility.stripMillis(new Date()));
-        proto.setSignupMethod("Club night PC");
 
         // Save to database.
         DB.executeTransaction(new DB.Transaction<Void>() {
@@ -473,12 +461,10 @@ public class RegisterWindow extends JDialog {
             writer.print(proto.getName() + ",");
             writer.print("" + ",");
             writer.print(proto.getStudentStatus() + ",");
-            writer.print(proto.getStudentId() + "/" + proto.getUPI() + ",");
+            writer.print(proto.getStudentId() + ",");
             writer.print(proto.getEmail() + ",");
             writer.print(proto.getSkillLevel() + ",");
-            writer.print(proto.getPaymentMethod() + ",");
             writer.print("" + ",");
-            writer.print(proto.getSignupMethod() + ",");
 
             writer.print("\r\n");
             writer.flush();

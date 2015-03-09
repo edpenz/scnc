@@ -86,6 +86,10 @@ public class Utility {
         else return o1.equals(o2);
     }
 
+    public static <T> T returnIfDifferent(T a, T b) {
+        return eqOrNull(a, b) ? null : b;
+    }
+
     public static int deltaSkill(String a, String b) {
         return Math.abs(compareSkill(a, b));
     }

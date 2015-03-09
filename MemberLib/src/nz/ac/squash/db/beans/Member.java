@@ -27,25 +27,21 @@ public class Member {
     @GeneratedValue
     private long mID;
 
-    private boolean mActive = true;
+    private Date mSignupTime;
+    private boolean mActive;
 
     // Identifying fields.
     private String mName;
+    private String mNickname;
     private String mStudentId;
-    private String mUPI;
     private String mEmail;
 
     // Info fields.
-    private String mSkillLevel;
+    private float mSkillLevel;
 
-    // Additional fields.
-    private Date mSignupTime;
-    private String mSignupMethod;
-
+    // Payment fields.
     private String mStudentStatus;
-
-    private String mPaymentMethod;
-    private String mHasPaid;
+    private String mPaymentStatus;
 
     public long getID() {
         return mID;
@@ -55,8 +51,8 @@ public class Member {
         return mActive;
     }
 
-    public void setActive(boolean mActive) {
-        this.mActive = mActive;
+    public void setActive(boolean active) {
+        mActive = active;
     }
 
     public String getName() {
@@ -64,7 +60,15 @@ public class Member {
     }
 
     public void setName(String name) {
-        this.mName = name;
+        mName = name;
+    }
+
+    public String getNickname() {
+        return mNickname;
+    }
+
+    public void setNickname(String nickname) {
+        mNickname = nickname;
     }
 
     public String getStudentId() {
@@ -72,23 +76,7 @@ public class Member {
     }
 
     public void setStudentId(String studentId) {
-        this.mStudentId = studentId;
-    }
-
-    public String getUPI() {
-        return mUPI;
-    }
-
-    public void setUPI(String upi) {
-        this.mUPI = upi;
-    }
-
-    public void setStudentIdAndUpi(String idAndUpi) {
-        String[] parts = idAndUpi.split("[^a-zA-Z0-9]");
-        for (String part : parts) {
-            if (part.matches("^[a-zA-Z]+[0-9]+$")) setUPI(part);
-            if (part.matches("^[0-9]+$")) setStudentId(part);
-        }
+        mStudentId = studentId;
     }
 
     public String getEmail() {
@@ -99,12 +87,12 @@ public class Member {
         this.mEmail = email;
     }
 
-    public String getSkillLevel() {
+    public float getSkillLevel() {
         return mSkillLevel;
     }
 
-    public void setSkillLevel(String skillLevel) {
-        this.mSkillLevel = skillLevel;
+    public void setSkillLevel(float skillLevel) {
+        mSkillLevel = skillLevel;
     }
 
     public String getStudentStatus() {
@@ -115,28 +103,16 @@ public class Member {
         this.mStudentStatus = mStudentStatus;
     }
 
-    public String getPaymentMethod() {
-        return mPaymentMethod;
+    public String getPaymentStatus() {
+        return mPaymentStatus;
     }
 
-    public void setPaymentMethod(String mPaymentMethod) {
-        this.mPaymentMethod = mPaymentMethod;
+    public void setPaymentStatus(String paymentStatus) {
+        mPaymentStatus = paymentStatus;
     }
 
-    public String getHasPaid() {
-        return mHasPaid;
-    }
-
-    public void setHasPaid(String hasPaid) {
-        this.mHasPaid = hasPaid;
-    }
-
-    public String getSignupMethod() {
-        return mSignupMethod;
-    }
-
-    public void setSignupMethod(String mSignupMethod) {
-        this.mSignupMethod = mSignupMethod;
+    public boolean hasPaid() {
+        return StringUtils.isNotEmpty(mPaymentStatus);
     }
 
     public Date getSignupTime() {
@@ -172,26 +148,35 @@ public class Member {
             mActive = other.mActive;
         }
 
-        if (!Utility.eqOrNull(mStudentId, other.mStudentId)) {
-            changed = true;
-            mStudentId = other.mStudentId;
-        }
         if (!Utility.eqOrNull(mName, other.mName)) {
             changed = true;
             mName = other.mName;
         }
-        if (!Utility.eqOrNull(mUPI, other.mUPI)) {
+        if (!Utility.eqOrNull(mNickname, other.mNickname)) {
             changed = true;
-            mUPI = other.mUPI;
+            mNickname = other.mNickname;
+        }
+        if (!Utility.eqOrNull(mStudentId, other.mStudentId)) {
+            changed = true;
+            mStudentId = other.mStudentId;
         }
         if (!Utility.eqOrNull(mEmail, other.mEmail)) {
             changed = true;
             mEmail = other.mEmail;
         }
 
-        if (!Utility.eqOrNull(mHasPaid, other.mHasPaid)) {
+        if (!Utility.eqOrNull(mSkillLevel, other.mSkillLevel)) {
             changed = true;
-            mHasPaid = other.mHasPaid;
+            mSkillLevel = other.mSkillLevel;
+        }
+
+        if (!Utility.eqOrNull(mStudentStatus, other.mStudentStatus)) {
+            changed = true;
+            mStudentStatus = other.mStudentStatus;
+        }
+        if (!Utility.eqOrNull(mPaymentStatus, other.mPaymentStatus)) {
+            changed = true;
+            mPaymentStatus = other.mPaymentStatus;
         }
 
         return changed;
@@ -223,7 +208,7 @@ public class Member {
         return prettyName.toString();
     }
 
-    private static String getNameStripped(String input) {
+    private static String stripName(String input) {
         StringBuilder b = new StringBuilder(input.length());
 
         for (int i = 0; i < input.length(); ++i) {
@@ -250,7 +235,7 @@ public class Member {
             boolean presentOnly) {
         // Tokenise query.
         List<String> queryTokens = Arrays.asList(StringUtils
-                .split(getNameStripped(query)));
+                .split(stripName(query)));
         if (queryTokens.isEmpty()) return new MemberResults();
 
         int threshold = 0;
@@ -303,11 +288,12 @@ public class Member {
             // Build list of member ID tokens.
             memberTokens.clear();
             Collections.addAll(memberTokens,
-                    StringUtils.split(getNameStripped(member.mName)));
+                    StringUtils.split(stripName(member.mName)));
+            if (!StringUtils.isBlank(member.mNickname)) Collections.addAll(
+                    memberTokens,
+                    StringUtils.split(stripName(member.mNickname)));
             if (!StringUtils.isBlank(member.mStudentId)) memberTokens
                     .add(member.mStudentId.toLowerCase());
-            if (!StringUtils.isBlank(member.mUPI)) memberTokens.add(member.mUPI
-                    .toLowerCase());
             if (!StringUtils.isBlank(member.mEmail)) memberTokens
                     .add(member.mEmail.toLowerCase());
 

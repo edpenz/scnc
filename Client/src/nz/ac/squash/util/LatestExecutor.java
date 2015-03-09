@@ -57,7 +57,6 @@ public class LatestExecutor extends AbstractExecutorService implements Runnable 
 
     @Override
     public void run() {
-        System.out.println(this);
         while (true) {
             synchronized (this) {
                 if (mIsShutdown) return;

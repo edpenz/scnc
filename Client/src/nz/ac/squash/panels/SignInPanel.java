@@ -8,6 +8,8 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -30,8 +32,11 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
+import nz.ac.squash.db.DB;
+import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
+import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
 
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +46,8 @@ public class SignInPanel extends JLayeredPane {
     private static final ListModel<Member> EMPTY_RESULTS = new DefaultListModel<Member>();
 
     private ExecutorService mSearchTask = new LatestExecutor();
+
+    private Member mSelectedMember = null;
 
     private JTextField mSearchField;
     private JLabel mSearchHintLabel;
@@ -61,11 +68,12 @@ public class SignInPanel extends JLayeredPane {
         createContents();
     }
 
-    public void clearSearch() {
+    public void clear() {
         mSearchField.setText("");
-        handleSearchQueryChanged("");
-        updateResultData(new MemberResults());
         mSearchField.requestFocus();
+        handleSearchQueryChanged("");
+
+        hideMemberPanel();
     }
 
     private void createContents() {
@@ -238,6 +246,11 @@ public class SignInPanel extends JLayeredPane {
         mPlayerPanel.add(mWantGamesRadio, gbc_mWantGamesRadio);
 
         mSignInButton = new JButton("Sign in");
+        mSignInButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                handleSignIn();
+            }
+        });
         mSignInButton.setFont(new Font("Tahoma", Font.PLAIN, 18));
         mSignInButton.setPreferredSize(new Dimension(63, 48));
         mSignInButton.setOpaque(false);
@@ -251,6 +264,11 @@ public class SignInPanel extends JLayeredPane {
         mPlayerPanel.add(mSignInButton, gbc_mSignInButton);
 
         mSignOutButton = new JButton("Sign out");
+        mSignOutButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                handleSignOut();
+            }
+        });
         mSignOutButton.setEnabled(false);
         mSignOutButton.setFont(new Font("Tahoma", Font.PLAIN, 18));
         mSignOutButton.setPreferredSize(new Dimension(71, 48));
@@ -277,13 +295,43 @@ public class SignInPanel extends JLayeredPane {
         add(mResultList, gbc_mResultList);
     }
 
+    protected void handleSignIn() {
+        final MemberStatus newStatus = new MemberStatus(mSelectedMember);
+        newStatus.setSkillLevel(mSkillSlider.getValue() / 3.f + 1.f);
+        newStatus.setWantsGames(mWantGamesRadio.isSelected());
+        newStatus.setPresent(true);
+
+        DB.queueTransaction(new Transaction<Void>() {
+            @Override
+            public void run() {
+                update(newStatus);
+            }
+        });
+
+        hideMemberPanel();
+    }
+
+    protected void handleSignOut() {
+        final MemberStatus newStatus = new MemberStatus(mSelectedMember);
+        newStatus.setPresent(false);
+
+        DB.queueTransaction(new Transaction<Void>() {
+            @Override
+            public void run() {
+                update(newStatus);
+            }
+        });
+
+        hideMemberPanel();
+    }
+
     protected void handleMemberSelected(Member member) {
         if (member == null) return;
 
         mSearchField.setText(member.getNameFormatted());
         updateResultData(new MemberResults());
 
-        mPlayerPanel.setVisible(true);
+        showMemberpanel(member);
     }
 
     protected void handleSearchQueryChanged(final String query) {
@@ -308,6 +356,35 @@ public class SignInPanel extends JLayeredPane {
             mResultList.setEnabled(false);
             mResultList.setModel(EMPTY_RESULTS);
         }
+    }
+
+    private void showMemberpanel(Member member) {
+        mSelectedMember = member;
+        MemberStatus previousStatus = new MemberStatus(member);
+
+        final int skill = Math
+                .round((previousStatus.getSkillLevel() - 1.f) * 3.f);
+        mSkillSlider.setValue(skill);
+
+        mWantGamesRadio.setSelected(previousStatus.wantsGames());
+        mWantTrainingRadio.setSelected(!previousStatus.wantsGames());
+
+        mSignInButton
+                .setText(previousStatus.isPresent() ? "Update" : "Sign-in");
+
+        mSignOutButton.setEnabled(previousStatus.isPresent());
+
+        mPlayerPanel.setVisible(true);
+    }
+
+    private void hideMemberPanel() {
+        mSelectedMember = null;
+
+        mPlayerPanel.setVisible(false);
+
+        mSearchField.setText("");
+        mSearchField.requestFocus();
+        handleSearchQueryChanged("");
     }
 
     private void updateResultData(MemberResults results) {

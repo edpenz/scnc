@@ -44,7 +44,7 @@ public class ReportNumberOfTurnups {
             final Member member = count.getKey();
             final Set<Date> presentDates = count.getValue();
 
-            boolean hasPaid = count.getKey().getHasPaid() != null;
+            boolean hasPaid = count.getKey().getPaymentStatus() != null;
             Date latest = Collections.max(presentDates);
 
             fw.write(member.getID() + "," + member.getNameFormatted() + "," +

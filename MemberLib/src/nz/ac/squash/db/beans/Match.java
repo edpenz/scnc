@@ -236,6 +236,10 @@ public class Match {
         return (Math.abs(aPos - bPos) + 1.f) / ladder.size();
     }
 
+    private static float deltaSkill(MemberStatus statusA, MemberStatus statusB) {
+        return Math.abs(statusA.getSkillLevel() - statusB.getSkillLevel());
+    }
+
     public static Match createMatch(final int court, final int slot,
             final Collection<MatchHint> extraHints) {
         return DB.executeTransaction(new DB.Transaction<Match>() {
@@ -343,8 +347,11 @@ public class Match {
                         // Compute properties of potential match.
                         final MatchProperties score = new MatchProperties();
                         {
-                            score.SkillDifference = deltaSkill(ladder, player1,
-                                    player2);
+                            // score.SkillDifference = deltaSkill(ladder,
+                            // player1, player2);
+                            score.SkillDifference = deltaSkill(
+                                    memberStatuses.get(player1),
+                                    memberStatuses.get(player2));
 
                             Integer player1MatchCount = Utility.firstNonNull(
                                     todaysMatchCounts.get(player1), 0);

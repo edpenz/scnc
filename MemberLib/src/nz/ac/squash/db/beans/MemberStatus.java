@@ -26,7 +26,7 @@ public class MemberStatus {
     @ManyToOne
     private Member mMember;
 
-    private String mSkillLevel;
+    private float mSkillLevel;
 
     private boolean mPresent;
     private boolean mWantsGames;
@@ -64,7 +64,7 @@ public class MemberStatus {
         });
     }
 
-    public MemberStatus(Member member, String skillLevel, boolean present,
+    public MemberStatus(Member member, float skillLevel, boolean present,
             boolean wantsGames) {
         mDate = new Date();
         mMember = member;
@@ -95,28 +95,28 @@ public class MemberStatus {
         this.mMember = mMember;
     }
 
-    public String getSkillLevel() {
+    public float getSkillLevel() {
         return mSkillLevel;
     }
 
-    public void setSkillLevel(String mSkillLevel) {
-        this.mSkillLevel = mSkillLevel;
+    public void setSkillLevel(float skillLevel) {
+        mSkillLevel = skillLevel;
     }
 
     public boolean wantsGames() {
         return mWantsGames;
     }
 
-    public void setWantsGames(boolean mWantsGames) {
-        this.mWantsGames = mWantsGames;
+    public void setWantsGames(boolean wantsGames) {
+        mWantsGames = wantsGames;
     }
 
     public boolean isPresent() {
         return mPresent;
     }
 
-    public void setPresent(boolean mPresent) {
-        this.mPresent = mPresent;
+    public void setPresent(boolean present) {
+        mPresent = present;
     }
 
     @Override

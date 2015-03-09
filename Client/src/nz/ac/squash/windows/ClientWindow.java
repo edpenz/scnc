@@ -193,7 +193,7 @@ public class ClientWindow extends JFrame {
         checkinButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showPanel(SignInPanel.class);
-                mSignInPanel.clearSearch();
+                mSignInPanel.clear();
                 // mCheckinPanel.resetSearch();
                 // mCheckinPanel.refreshLadder();
             }

@@ -63,33 +63,31 @@ public class Importer {
     private static class ImportActionUpdate implements ImportAction {
         private Member mMember;
 
-        private String mNewName = null;
         private Boolean mNewActive = null;
-        private String mHasPaid = null;
+        private String mNewName = null;
+        private String mNewNickname = null;
+        private String mNewPaymentStatus = null;
 
         public static ImportActionUpdate tryCreate(Member oldInfo,
                 Member newInfo) {
             ImportActionUpdate action = new ImportActionUpdate();
             action.mMember = oldInfo;
 
-            boolean hasAnEffect = false;
+            action.mNewActive = Utility.returnIfDifferent(oldInfo.isActive(),
+                    newInfo.isActive());
+            action.mNewName = Utility.returnIfDifferent(oldInfo.getName(),
+                    newInfo.getName());
+            action.mNewNickname = Utility.returnIfDifferent(
+                    oldInfo.getNickname(), newInfo.getNickname());
+            action.mNewPaymentStatus = Utility.returnIfDifferent(
+                    oldInfo.getPaymentStatus(), newInfo.getPaymentStatus());
 
-            if (oldInfo.isActive() != newInfo.isActive()) {
-                action.mNewActive = newInfo.isActive();
-                hasAnEffect = true;
+            if (action.mNewActive != null || action.mNewName != null ||
+                action.mNewNickname != null || action.mNewPaymentStatus != null) {
+                return action;
+            } else {
+                return null;
             }
-
-            if (!oldInfo.getName().equals(newInfo.getName())) {
-                action.mNewName = newInfo.getName();
-                hasAnEffect = true;
-            }
-
-            if (!Utility.eqOrNull(oldInfo.getHasPaid(), newInfo.getHasPaid())) {
-                action.mHasPaid = newInfo.getHasPaid();
-                hasAnEffect = true;
-            }
-
-            return hasAnEffect ? action : null;
         }
 
         @Override
@@ -97,9 +95,11 @@ public class Importer {
             DB.queueTransaction(new Transaction<Void>() {
                 @Override
                 public void run() {
-                    if (mNewName != null) mMember.setName(mNewName);
                     if (mNewActive != null) mMember.setActive(mNewActive);
-                    if (mHasPaid != null) mMember.setHasPaid(mHasPaid);
+                    if (mNewName != null) mMember.setName(mNewName);
+                    if (mNewNickname != null) mMember.setNickname(mNewNickname);
+                    if (mNewPaymentStatus != null) mMember
+                            .setPaymentStatus(mNewPaymentStatus);
 
                     update(mMember);
                     sLogger.info("Updated member " + mMember.getNameFormatted());
@@ -116,10 +116,10 @@ public class Importer {
         public String getDescription() {
             StringBuilder builder = new StringBuilder();
 
-            if (mNewName != null) builder.append("Name changed to \"")
-                    .append(mNewName).append("\", ");
-
-            if (mHasPaid != null) builder.append("Paid: ").append(mHasPaid);
+            if (mNewActive != null) builder.append("Disabled, ");
+            if (mNewName != null) builder.append("Name changed, ");
+            if (mNewNickname != null) builder.append("Nickname changed, ");
+            if (mNewPaymentStatus != null) builder.append("Paid, ");
 
             return builder.toString();
         }
@@ -156,20 +156,21 @@ public class Importer {
                 }
 
                 imported.setName(lineParts[1]);
-                // imported.setSignupCause(lineParts[2]);
+                imported.setNickname(lineParts[2]);
                 imported.setEmail(lineParts[3]);
+
                 imported.setStudentStatus(lineParts[4]);
-                imported.setStudentIdAndUpi(lineParts[5]);
-                imported.setSkillLevel(lineParts[6]);
+                imported.setStudentId(lineParts[5]);
+
+                imported.setSkillLevel(parseSkillLevel(lineParts[6],
+                        lineParts[7]));
 
                 // Optional fields.
-                if (lineParts.length > 9) {
-                    imported.setActive(StringUtils.isEmpty(lineParts[9]));
-                }
+                if (lineParts.length > 9) imported.setActive(StringUtils
+                        .isEmpty(lineParts[9]));
 
-                if (lineParts.length > 11) {
-                    imported.setHasPaid(lineParts[11]);
-                }
+                if (lineParts.length > 11) imported
+                        .setPaymentStatus(lineParts[11]);
 
                 final Member existingMember = existingMembers.get(imported
                         .getSignupTime());
@@ -192,5 +193,31 @@ public class Importer {
         }
 
         return actions;
+    }
+
+    private static float parseSkillLevel(String level, String grade) {
+        if (StringUtils.isNotEmpty(grade)) {
+            char g = grade.toLowerCase().charAt(0);
+
+            switch (g) {
+            case 'a':
+            case 'b':
+                return 1.f;
+
+            case 'c':
+                return 1.f + 1.f / 3.f;
+            case 'd':
+                return 1.f + 2.f / 3.f;
+            case 'e':
+                return 2.f;
+            case 'f':
+                return 2.f + 1.f / 3.f;
+            case 'j':
+                return 2.f + 2.f / 3.f;
+
+            }
+        }
+
+        return Float.parseFloat(level);
     }
 }

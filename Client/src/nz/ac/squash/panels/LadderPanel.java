@@ -400,12 +400,12 @@ public class LadderPanel extends JPanel {
         mLadderGrid.setLayout(new VerticalGridLayout(15, 0, 5, 0));
     }
 
-    private String getSkillLevel() {
-        if (mLevel1Radio.isSelected()) return "1";
-        else if (mLevel2Radio.isSelected()) return "2";
-        else if (mLevel3Radio.isSelected()) return "3";
-        else if (mLevel4Radio.isSelected()) return "4";
-        else return "";
+    private float getSkillLevel() {
+        if (mLevel1Radio.isSelected()) return 1.f;
+        else if (mLevel2Radio.isSelected()) return 2.f;
+        else if (mLevel3Radio.isSelected()) return 3.f;
+        else if (mLevel4Radio.isSelected()) return 4.f;
+        else return 2.5f;
     }
 
     public void resetSearch() {
@@ -440,24 +440,24 @@ public class LadderPanel extends JPanel {
         mLevel4Radio.setEnabled(true);
 
         // Find their latest skill level.
-        String skillLevel = new MemberStatus(mSelectedMember).getSkillLevel();
+        float skillLevel = new MemberStatus(mSelectedMember).getSkillLevel();
 
         // Preselect most recent skill level.
-        if (StringUtils.isEmpty(skillLevel)) {
-            mSkillRadioGroup.clearSelection();
-            disableMode();
-        } else if (StringUtils.equals(skillLevel, "4")) {
-            mLevel4Radio.setSelected(true);
-            enableMode();
-        } else if (StringUtils.equals(skillLevel, "3")) {
-            mLevel3Radio.setSelected(true);
-            enableMode();
-        } else if (StringUtils.equals(skillLevel, "2")) {
-            mLevel2Radio.setSelected(true);
-            enableMode();
-        } else {
+        if (skillLevel < 1.5f) {
             mLevel1Radio.setSelected(true);
             enableMode();
+        } else if (skillLevel < 2.5f) {
+            mLevel2Radio.setSelected(true);
+            enableMode();
+        } else if (skillLevel < 3.5f) {
+            mLevel3Radio.setSelected(true);
+            enableMode();
+        } else if (skillLevel < 4.5f) {
+            mLevel4Radio.setSelected(true);
+            enableMode();
+        } else {
+            mSkillRadioGroup.clearSelection();
+            disableMode();
         }
     }
 
