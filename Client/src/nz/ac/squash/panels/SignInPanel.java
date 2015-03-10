@@ -38,6 +38,7 @@ import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -63,6 +64,7 @@ public class SignInPanel extends JLayeredPane {
     private JButton mSignInButton;
     private JRadioButton mWantGamesRadio;
     private JRadioButton mWantTrainingRadio;
+    private JLabel mRegisterButton;
 
     public SignInPanel() {
         createContents();
@@ -87,11 +89,30 @@ public class SignInPanel extends JLayeredPane {
                 Double.MIN_VALUE };
         setLayout(gridBagLayout);
 
+        mRegisterButton = new JLabel("Not found? Click here to register");
+        mRegisterButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                handleRegister();
+            }
+        });
+        mRegisterButton.setForeground(Color.WHITE);
+        mRegisterButton.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        setLayer(mRegisterButton, 0);
+        mRegisterButton.setCursor(Cursor
+                .getPredefinedCursor(Cursor.HAND_CURSOR));
+        GridBagConstraints gbc_mRegisterButton = new GridBagConstraints();
+        gbc_mRegisterButton.anchor = GridBagConstraints.SOUTH;
+        gbc_mRegisterButton.insets = new Insets(0, 0, 5, 5);
+        gbc_mRegisterButton.gridx = 2;
+        gbc_mRegisterButton.gridy = 2;
+        add(mRegisterButton, gbc_mRegisterButton);
+
         JLabel lblNewLabel = new JLabel((String) null);
         lblNewLabel.setIcon(new ImageIcon(SignInPanel.class
                 .getResource("/images/icon_search.png")));
         GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
-        gbc_lblNewLabel.insets = new Insets(0, 0, 0, 16);
+        gbc_lblNewLabel.insets = new Insets(0, 0, 5, 16);
         gbc_lblNewLabel.anchor = GridBagConstraints.EAST;
         gbc_lblNewLabel.gridx = 1;
         gbc_lblNewLabel.gridy = 1;
@@ -103,6 +124,7 @@ public class SignInPanel extends JLayeredPane {
         mSearchHintLabel.setFocusable(false);
         setLayer(mSearchHintLabel, 1);
         GridBagConstraints gbc_mSearchHintLabel = new GridBagConstraints();
+        gbc_mSearchHintLabel.insets = new Insets(0, 0, 5, 5);
         gbc_mSearchHintLabel.fill = GridBagConstraints.BOTH;
         gbc_mSearchHintLabel.gridx = 2;
         gbc_mSearchHintLabel.gridy = 1;
@@ -111,6 +133,12 @@ public class SignInPanel extends JLayeredPane {
         mSearchHintLabel.setFont(new Font("Tahoma", Font.PLAIN, 28));
 
         mSearchField = new JTextField();
+        mSearchField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent arg0) {
+                hideMemberPanel();
+            }
+        });
         mSearchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -126,6 +154,7 @@ public class SignInPanel extends JLayeredPane {
         mSearchField.setFont(new Font("Tahoma", Font.PLAIN, 28));
         mSearchField.setColumns(24);
         GridBagConstraints gbc_txtSearchForMember = new GridBagConstraints();
+        gbc_txtSearchForMember.insets = new Insets(0, 0, 5, 5);
         gbc_txtSearchForMember.fill = GridBagConstraints.BOTH;
         gbc_txtSearchForMember.gridx = 2;
         gbc_txtSearchForMember.gridy = 1;
@@ -139,14 +168,14 @@ public class SignInPanel extends JLayeredPane {
                 handleMemberSelected(mResultList.getSelectedValue());
             }
         });
-        setLayer(mResultList, 0);
+        setLayer(mResultList, 2);
 
         mPlayerPanel = new JPanel();
         mPlayerPanel.setVisible(false);
-        setLayer(mPlayerPanel, 0);
+        setLayer(mPlayerPanel, 1);
         mPlayerPanel.setBackground(Color.WHITE);
         GridBagConstraints gbc_mPlayerPanel = new GridBagConstraints();
-        gbc_mPlayerPanel.insets = new Insets(16, 0, 0, 0);
+        gbc_mPlayerPanel.insets = new Insets(16, 0, 5, 5);
         gbc_mPlayerPanel.fill = GridBagConstraints.BOTH;
         gbc_mPlayerPanel.gridx = 2;
         gbc_mPlayerPanel.gridy = 2;
@@ -287,12 +316,25 @@ public class SignInPanel extends JLayeredPane {
         mResultList.setPreferredSize(mResultList
                 .getPreferredScrollableViewportSize());
         GridBagConstraints gbc_mResultList = new GridBagConstraints();
-        gbc_mResultList.insets = new Insets(0, 0, 0, 0);
+        gbc_mResultList.insets = new Insets(0, 0, 5, 5);
         gbc_mResultList.anchor = GridBagConstraints.NORTH;
         gbc_mResultList.fill = GridBagConstraints.HORIZONTAL;
         gbc_mResultList.gridx = 2;
         gbc_mResultList.gridy = 2;
         add(mResultList, gbc_mResultList);
+    }
+
+    protected void handleRegister() {
+        RegisterWindow.showDialog(this, new RegisterWindow.Callback() {
+            @Override
+            public void memberRegistered(Member member) {
+                handleMemberRegistered(member);
+            }
+        });
+    }
+
+    protected void handleMemberRegistered(Member member) {
+        handleMemberSelected(member);
     }
 
     protected void handleSignIn() {
@@ -328,6 +370,7 @@ public class SignInPanel extends JLayeredPane {
     protected void handleMemberSelected(Member member) {
         if (member == null) return;
 
+        mSearchHintLabel.setVisible(false);
         mSearchField.setText(member.getNameFormatted());
         updateResultData(new MemberResults());
 
@@ -362,8 +405,8 @@ public class SignInPanel extends JLayeredPane {
         mSelectedMember = member;
         MemberStatus previousStatus = new MemberStatus(member);
 
-        final int skill = Math
-                .round((previousStatus.getSkillLevel() - 1.f) * 3.f);
+        int skill = Math.round((previousStatus.getSkillLevel() - 1.f) * 3.f);
+        if (skill < 0) skill = 6;
         mSkillSlider.setValue(skill);
 
         mWantGamesRadio.setSelected(previousStatus.wantsGames());
@@ -375,12 +418,14 @@ public class SignInPanel extends JLayeredPane {
         mSignOutButton.setEnabled(previousStatus.isPresent());
 
         mPlayerPanel.setVisible(true);
+        mRegisterButton.setVisible(false);
     }
 
     private void hideMemberPanel() {
         mSelectedMember = null;
 
         mPlayerPanel.setVisible(false);
+        mRegisterButton.setVisible(true);
 
         mSearchField.setText("");
         mSearchField.requestFocus();
