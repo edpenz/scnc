@@ -205,7 +205,7 @@ public class Match {
                                  (o2.IsRequested ? 0 : 1);
 
             // Prefer matches for players who have played less frequently.
-            if (Math.abs(deltaTotalMatches) > 1) return deltaTotalMatches;
+            if (Math.abs(deltaTotalMatches) > 0) return deltaTotalMatches;
             if (Math.abs(deltaMinMatches) > 1) return deltaMinMatches;
 
             // Prefer requests.

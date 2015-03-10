@@ -419,6 +419,8 @@ public class SignInPanel extends JLayeredPane {
 
         mPlayerPanel.setVisible(true);
         mRegisterButton.setVisible(false);
+
+        mSignInButton.requestFocus();
     }
 
     private void hideMemberPanel() {
