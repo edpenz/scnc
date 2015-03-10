@@ -205,7 +205,11 @@ public class Member {
         // Remove final spacer.
         prettyName.deleteCharAt(prettyName.length() - 1);
 
-        return prettyName.toString();
+        if (StringUtils.isNotBlank(mNickname)) {
+            return mNickname + " (" + prettyName.toString() + ")";
+        } else {
+            return prettyName.toString();
+        }
     }
 
     private static String stripName(String input) {
