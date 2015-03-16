@@ -123,8 +123,9 @@ public class StatsWindow extends JDialog {
         mTable.setPreferredScrollableViewportSize(new Dimension(325, 300));
         scrollPane.setViewportView(mTable);
         mTable.setModel(new DefaultTableModel(new Object[][] {}, new String[] {
-                "Member", "Match Count" }) {
-            Class[] columnTypes = new Class[] { String.class, Integer.class };
+                "Member", "Match Count", "Wants Games" }) {
+            Class[] columnTypes = new Class[] { String.class, Integer.class,
+                    Boolean.class };
 
             public Class getColumnClass(int columnIndex) {
                 return columnTypes[columnIndex];
@@ -154,6 +155,8 @@ public class StatsWindow extends JDialog {
         final Collection<MemberStatus> members = MemberStatus
                 .getPresentMembers();
 
+        final Map<Member, MemberStatus> statusMapping = new HashMap<>();
+
         final List<Match> matches = //
         DB.executeTransaction(new Transaction<List<Match>>() {
             @Override
@@ -166,6 +169,7 @@ public class StatsWindow extends JDialog {
         final Map<Member, Integer> matchCounts = new HashMap<>();
         for (MemberStatus status : members) {
             matchCounts.put(status.getMember(), 0);
+            statusMapping.put(status.getMember(), status);
         }
         for (Match match : matches) {
             Integer count1 = matchCounts.get(match.getPlayer1());
@@ -183,8 +187,12 @@ public class StatsWindow extends JDialog {
 
         final DefaultTableModel model = (DefaultTableModel) mTable.getModel();
         for (Entry<Member, Integer> entry : matchCounts.entrySet()) {
-            model.addRow(new Object[] { entry.getKey().getNameFormatted(),
-                    entry.getValue() });
+            String name = entry.getKey().getNameFormatted();
+            Member member = entry.getKey();
+            MemberStatus status = statusMapping.get(member);
+
+            model.addRow(new Object[] { name, entry.getValue(),
+                    status != null ? status.wantsGames() : false });
         }
 
         final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(
