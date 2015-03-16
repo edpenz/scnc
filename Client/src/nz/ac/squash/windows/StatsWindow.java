@@ -130,6 +130,12 @@ public class StatsWindow extends JDialog {
             public Class getColumnClass(int columnIndex) {
                 return columnTypes[columnIndex];
             }
+
+            boolean[] columnEditables = new boolean[] { false, false, false };
+
+            public boolean isCellEditable(int row, int column) {
+                return columnEditables[column];
+            }
         });
         mTable.getColumnModel().getColumn(0).setPreferredWidth(250);
 
