@@ -10,6 +10,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -38,6 +40,7 @@ import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
+import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
@@ -65,6 +68,7 @@ public class SignInPanel extends JLayeredPane {
     private JRadioButton mWantGamesRadio;
     private JRadioButton mWantTrainingRadio;
     private JLabel mRegisterButton;
+    private JLabel mFeesLabel;
 
     public SignInPanel() {
         createContents();
@@ -82,7 +86,7 @@ public class SignInPanel extends JLayeredPane {
         setOpaque(false);
         GridBagLayout gridBagLayout = new GridBagLayout();
         gridBagLayout.columnWidths = new int[] { 0, 0, 700, 0, 0 };
-        gridBagLayout.rowHeights = new int[] { 0, 0, 275, 0, 0 };
+        gridBagLayout.rowHeights = new int[] { 0, 0, 300, 0, 0 };
         gridBagLayout.columnWeights = new double[] { 1.0, 0.0, 1.0, 1.0,
                 Double.MIN_VALUE };
         gridBagLayout.rowWeights = new double[] { 1.0, 0.0, 0.0, 1.0,
@@ -133,9 +137,9 @@ public class SignInPanel extends JLayeredPane {
         mSearchHintLabel.setFont(new Font("Tahoma", Font.PLAIN, 28));
 
         mSearchField = new JTextField();
-        mSearchField.addMouseListener(new MouseAdapter() {
+        mSearchField.addFocusListener(new FocusAdapter() {
             @Override
-            public void mouseClicked(MouseEvent arg0) {
+            public void focusGained(FocusEvent e) {
                 hideMemberPanel();
             }
         });
@@ -181,12 +185,12 @@ public class SignInPanel extends JLayeredPane {
         gbc_mPlayerPanel.gridy = 2;
         add(mPlayerPanel, gbc_mPlayerPanel);
         GridBagLayout gbl_mPlayerPanel = new GridBagLayout();
-        gbl_mPlayerPanel.columnWidths = new int[] { 0, 0, 0, 0, 0 };
-        gbl_mPlayerPanel.rowHeights = new int[] { 48, 0, 0, 0, 0, 0 };
-        gbl_mPlayerPanel.columnWeights = new double[] { 0.0, 1.0, 1.0, 0.0,
-                Double.MIN_VALUE };
-        gbl_mPlayerPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 1.0,
-                Double.MIN_VALUE };
+        gbl_mPlayerPanel.columnWidths = new int[] { 0, 0, 0, 0, 0, 0 };
+        gbl_mPlayerPanel.rowHeights = new int[] { 48, 0, 0, 0, 0, 0, 0 };
+        gbl_mPlayerPanel.columnWeights = new double[] { 0.0, 0.0, 1.0, 1.0,
+                0.0, Double.MIN_VALUE };
+        gbl_mPlayerPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0,
+                1.0, Double.MIN_VALUE };
         mPlayerPanel.setLayout(gbl_mPlayerPanel);
 
         lblNewLabel_1 = new JLabel("Advanced");
@@ -194,8 +198,9 @@ public class SignInPanel extends JLayeredPane {
         lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 18));
         lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
         GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
+        gbc_lblNewLabel_1.insets = new Insets(0, 0, 5, 5);
         gbc_lblNewLabel_1.anchor = GridBagConstraints.NORTH;
-        gbc_lblNewLabel_1.gridx = 0;
+        gbc_lblNewLabel_1.gridx = 1;
         gbc_lblNewLabel_1.gridy = 1;
         mPlayerPanel.add(lblNewLabel_1, gbc_lblNewLabel_1);
 
@@ -205,9 +210,9 @@ public class SignInPanel extends JLayeredPane {
         lblIntermediate.setFont(new Font("Tahoma", Font.PLAIN, 18));
         GridBagConstraints gbc_lblIntermediate = new GridBagConstraints();
         gbc_lblIntermediate.anchor = GridBagConstraints.NORTH;
-        gbc_lblIntermediate.insets = new Insets(0, 48, 0, 0);
+        gbc_lblIntermediate.insets = new Insets(0, 48, 5, 5);
         gbc_lblIntermediate.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblIntermediate.gridx = 1;
+        gbc_lblIntermediate.gridx = 2;
         gbc_lblIntermediate.gridy = 1;
         mPlayerPanel.add(lblIntermediate, gbc_lblIntermediate);
 
@@ -217,9 +222,9 @@ public class SignInPanel extends JLayeredPane {
         lblBeginner.setFont(new Font("Tahoma", Font.PLAIN, 18));
         GridBagConstraints gbc_lblBeginner = new GridBagConstraints();
         gbc_lblBeginner.anchor = GridBagConstraints.NORTH;
-        gbc_lblBeginner.insets = new Insets(0, 0, 0, 48);
+        gbc_lblBeginner.insets = new Insets(0, 0, 5, 48);
         gbc_lblBeginner.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblBeginner.gridx = 2;
+        gbc_lblBeginner.gridx = 3;
         gbc_lblBeginner.gridy = 1;
         mPlayerPanel.add(lblBeginner, gbc_lblBeginner);
 
@@ -228,8 +233,9 @@ public class SignInPanel extends JLayeredPane {
         lblNewLabel_2.setFont(new Font("Tahoma", Font.PLAIN, 18));
         lblNewLabel_2.setHorizontalAlignment(SwingConstants.CENTER);
         GridBagConstraints gbc_lblNewLabel_2 = new GridBagConstraints();
+        gbc_lblNewLabel_2.insets = new Insets(0, 0, 5, 0);
         gbc_lblNewLabel_2.anchor = GridBagConstraints.NORTH;
-        gbc_lblNewLabel_2.gridx = 3;
+        gbc_lblNewLabel_2.gridx = 4;
         gbc_lblNewLabel_2.gridy = 1;
         mPlayerPanel.add(lblNewLabel_2, gbc_lblNewLabel_2);
 
@@ -243,9 +249,9 @@ public class SignInPanel extends JLayeredPane {
         GridBagConstraints gbc_mSkillSlider = new GridBagConstraints();
         gbc_mSkillSlider.fill = GridBagConstraints.HORIZONTAL;
         gbc_mSkillSlider.anchor = GridBagConstraints.SOUTH;
-        gbc_mSkillSlider.insets = new Insets(0, 64, 0, 64);
+        gbc_mSkillSlider.insets = new Insets(0, 64, 5, 64);
         gbc_mSkillSlider.gridwidth = 4;
-        gbc_mSkillSlider.gridx = 0;
+        gbc_mSkillSlider.gridx = 1;
         gbc_mSkillSlider.gridy = 0;
         mPlayerPanel.add(mSkillSlider, gbc_mSkillSlider);
 
@@ -255,9 +261,9 @@ public class SignInPanel extends JLayeredPane {
         mWantTrainingRadio.setFont(new Font("Tahoma", Font.PLAIN, 18));
         mWantTrainingRadio.setOpaque(false);
         GridBagConstraints gbc_mWantTrainingRadio = new GridBagConstraints();
-        gbc_mWantTrainingRadio.insets = new Insets(16, 64, 0, 0);
+        gbc_mWantTrainingRadio.insets = new Insets(16, 64, 5, 0);
         gbc_mWantTrainingRadio.anchor = GridBagConstraints.WEST;
-        gbc_mWantTrainingRadio.gridx = 0;
+        gbc_mWantTrainingRadio.gridx = 1;
         gbc_mWantTrainingRadio.gridy = 2;
         gbc_mWantTrainingRadio.gridwidth = 4;
         mPlayerPanel.add(mWantTrainingRadio, gbc_mWantTrainingRadio);
@@ -269,8 +275,8 @@ public class SignInPanel extends JLayeredPane {
         GridBagConstraints gbc_mWantGamesRadio = new GridBagConstraints();
         gbc_mWantGamesRadio.anchor = GridBagConstraints.WEST;
         gbc_mWantGamesRadio.gridwidth = 4;
-        gbc_mWantGamesRadio.insets = new Insets(0, 64, 0, 0);
-        gbc_mWantGamesRadio.gridx = 0;
+        gbc_mWantGamesRadio.insets = new Insets(0, 64, 5, 0);
+        gbc_mWantGamesRadio.gridx = 1;
         gbc_mWantGamesRadio.gridy = 3;
         mPlayerPanel.add(mWantGamesRadio, gbc_mWantGamesRadio);
 
@@ -280,6 +286,15 @@ public class SignInPanel extends JLayeredPane {
                 handleSignIn();
             }
         });
+
+        mFeesLabel = new JLabel(" ");
+        mFeesLabel.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        GridBagConstraints gbc_mFeesLabel = new GridBagConstraints();
+        gbc_mFeesLabel.gridwidth = 5;
+        gbc_mFeesLabel.insets = new Insets(0, 0, 5, 5);
+        gbc_mFeesLabel.gridx = 0;
+        gbc_mFeesLabel.gridy = 4;
+        mPlayerPanel.add(mFeesLabel, gbc_mFeesLabel);
         mSignInButton.setFont(new Font("Tahoma", Font.PLAIN, 18));
         mSignInButton.setPreferredSize(new Dimension(63, 48));
         mSignInButton.setOpaque(false);
@@ -288,8 +303,8 @@ public class SignInPanel extends JLayeredPane {
         gbc_mSignInButton.insets = new Insets(16, 64, 16, 16);
         gbc_mSignInButton.fill = GridBagConstraints.HORIZONTAL;
         gbc_mSignInButton.gridwidth = 2;
-        gbc_mSignInButton.gridx = 0;
-        gbc_mSignInButton.gridy = 4;
+        gbc_mSignInButton.gridx = 1;
+        gbc_mSignInButton.gridy = 5;
         mPlayerPanel.add(mSignInButton, gbc_mSignInButton);
 
         mSignOutButton = new JButton("Sign out");
@@ -307,8 +322,8 @@ public class SignInPanel extends JLayeredPane {
         gbc_mSignOutButton.insets = new Insets(16, 16, 16, 64);
         gbc_mSignOutButton.fill = GridBagConstraints.HORIZONTAL;
         gbc_mSignOutButton.gridwidth = 2;
-        gbc_mSignOutButton.gridx = 2;
-        gbc_mSignOutButton.gridy = 4;
+        gbc_mSignOutButton.gridx = 3;
+        gbc_mSignOutButton.gridy = 5;
         mPlayerPanel.add(mSignOutButton, gbc_mSignOutButton);
         mResultList.setFont(new Font("Tahoma", Font.PLAIN, 24));
         mResultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -374,7 +389,7 @@ public class SignInPanel extends JLayeredPane {
         mSearchField.setText(member.getNameFormatted());
         updateResultData(new MemberResults());
 
-        showMemberpanel(member);
+        showMemberPanel(member);
     }
 
     protected void handleSearchQueryChanged(final String query) {
@@ -401,7 +416,7 @@ public class SignInPanel extends JLayeredPane {
         }
     }
 
-    private void showMemberpanel(Member member) {
+    private void showMemberPanel(Member member) {
         mSelectedMember = member;
         MemberStatus previousStatus = new MemberStatus(member);
 
@@ -411,6 +426,25 @@ public class SignInPanel extends JLayeredPane {
 
         mWantGamesRadio.setSelected(previousStatus.wantsGames());
         mWantTrainingRadio.setSelected(!previousStatus.wantsGames());
+
+        final boolean hasPaidFees = StringUtils.isNotBlank(member
+                .getPaymentStatus());
+        final int nightsAttended = SessionHelper.current()
+                .getPriorNightsAttended(member);
+        final int feeDollars = "UoA student".equalsIgnoreCase(member
+                .getStudentStatus()) ? 30 : 35;
+
+        if (hasPaidFees || nightsAttended == 0) {
+            mFeesLabel.setText(" ");
+        } else if (nightsAttended == 1) {
+            mFeesLabel.setText("Your membership fee ($" + feeDollars +
+                               ") is due today");
+            mFeesLabel.setForeground(Color.GRAY);
+        } else {
+            mFeesLabel.setText("Your membership fee ($" + feeDollars +
+                               ") is overdue");
+            mFeesLabel.setForeground(Color.RED);
+        }
 
         mSignInButton
                 .setText(previousStatus.isPresent() ? "Update" : "Sign-in");

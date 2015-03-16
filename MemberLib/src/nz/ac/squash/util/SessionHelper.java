@@ -147,6 +147,39 @@ public class SessionHelper {
         return weightedMatchCount;
     }
 
+    // Attendance.
+    private Map<Member, Integer> mAttendance;
+
+    public synchronized int getPriorNightsAttended(Member member) {
+        if (mAttendance == null) {
+            mAttendance = new HashMap<>();
+            DB.executeTransaction(new DB.Transaction<Void>() {
+                @Override
+                public void run() {
+                    final Date today = Utility.today();
+
+                    Set<Tuple<Member, Date>> attendances = new HashSet<>();
+                    for (MemberStatus status : listAll(MemberStatus.class)) {
+                        Date day = Utility.stripTime(status.getDate());
+                        if (day.equals(today)) continue;
+
+                        attendances.add(new Tuple<Member, Date>(status
+                                .getMember(), day));
+                        mAttendance.put(status.getMember(), 0);
+                    }
+
+                    for (Tuple<Member, Date> attendance : attendances) {
+                        final Member member = attendance.getA();
+                        mAttendance.put(member, mAttendance.get(member) + 1);
+                    }
+                }
+            });
+        }
+
+        final Integer nightsAttended = mAttendance.get(member);
+        return nightsAttended != null ? nightsAttended : 0;
+    }
+
     // Ladder.
     private List<Member> mLadder = null;
 
