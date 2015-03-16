@@ -148,6 +148,9 @@ public class SignInPanel extends JLayeredPane {
             public void keyReleased(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     handleMemberSelected(mResultList.getSelectedValue());
+                } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    mResultList.requestFocus();
+                    mResultList.setSelectedIndex(0);
                 } else {
                     handleSearchQueryChanged(mSearchField.getText());
                 }
@@ -170,6 +173,14 @@ public class SignInPanel extends JLayeredPane {
             @Override
             public void mouseClicked(MouseEvent e) {
                 handleMemberSelected(mResultList.getSelectedValue());
+            }
+        });
+        mResultList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    handleMemberSelected(mResultList.getSelectedValue());
+                }
             }
         });
         setLayer(mResultList, 2);
