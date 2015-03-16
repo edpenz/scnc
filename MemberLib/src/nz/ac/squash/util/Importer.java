@@ -214,10 +214,11 @@ public class Importer {
                 return 2.f + 1.f / 3.f;
             case 'j':
                 return 2.f + 2.f / 3.f;
-
             }
+        } else if (StringUtils.isNotEmpty(level)) {
+            return Float.parseFloat(level);
         }
 
-        return Float.parseFloat(level);
+        return 2.5f;
     }
 }

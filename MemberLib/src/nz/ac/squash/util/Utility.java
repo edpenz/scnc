@@ -9,6 +9,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.WordUtils;
+
 public class Utility {
     public static final DateFormat FILE_SAFE_FORMATTER = new SimpleDateFormat(
             "yyyy-MM-dd_HH-mm-ss");
@@ -107,6 +111,31 @@ public class Utility {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private static final String[] NAME_PREPOSITIONS = new String[] { "van",
+            "von", "de", "der" };
+
+    public static String formatName(String fullname, String nickname) {
+        final String[] nameParts = StringUtils.split(fullname.toLowerCase());
+        final boolean hasNickname = StringUtils.isNotBlank(nickname);
+
+        StringBuilder name = new StringBuilder(fullname.length());
+        if (hasNickname) {
+            nameParts[0] = WordUtils.capitalizeFully(nickname);
+        }
+        for (String namePart : nameParts) {
+            final boolean isPreposition = ArrayUtils.contains(
+                    NAME_PREPOSITIONS, namePart);
+
+            name.append(!isPreposition ? WordUtils.capitalize(namePart)
+                    : namePart);
+            name.append(" ");
+        }
+
+        name.deleteCharAt(name.length() - 1);
+
+        return name.toString();
     }
 
     private static Class<?> sEntryClass = null;

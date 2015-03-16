@@ -68,7 +68,7 @@ public class Member {
     }
 
     public void setNickname(String nickname) {
-        mNickname = nickname;
+        mNickname = StringUtils.isNotBlank(nickname) ? nickname : null;
     }
 
     public String getStudentId() {
@@ -183,33 +183,7 @@ public class Member {
     }
 
     public String getNameFormatted() {
-        String[] names = StringUtils.split(mName);
-        StringBuilder prettyName = new StringBuilder(mName.length());
-
-        for (String name : names) {
-            // Make first character upper case.
-            prettyName.append(Character.toUpperCase(name.charAt(0)));
-
-            // Make remainder lower case if it was all upper case.
-            if (name.length() > 1) {
-                String remainder = name.substring(1);
-                if (remainder.equals(remainder.toUpperCase())) prettyName
-                        .append(remainder.toLowerCase());
-                else prettyName.append(remainder);
-            }
-
-            // Add spacer.
-            prettyName.append(' ');
-        }
-
-        // Remove final spacer.
-        prettyName.deleteCharAt(prettyName.length() - 1);
-
-        if (StringUtils.isNotBlank(mNickname)) {
-            return mNickname + " (" + prettyName.toString() + ")";
-        } else {
-            return prettyName.toString();
-        }
+        return Utility.formatName(mName, mNickname);
     }
 
     private static String stripName(String input) {
