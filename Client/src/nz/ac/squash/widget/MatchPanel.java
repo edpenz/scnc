@@ -81,7 +81,7 @@ public class MatchPanel extends JPanel {
 
             if (!new Rectangle(getSize()).contains(loc)) {
                 mIsHovering = false;
-                clearHints();
+                resetHints();
                 switchPanel(false);
             }
         }
@@ -337,10 +337,10 @@ public class MatchPanel extends JPanel {
             }
         });
 
-        mKickPlayer1Button = new JButton("Kick");
+        mKickPlayer1Button = new JButton("\u21ba");
         mKickPlayer1Button.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                kickPlayer(mMatch.getPlayer1());
+                replacePlayer(mMatch.getPlayer1());
             }
         });
         mKickPlayer1Button.setOpaque(false);
@@ -365,7 +365,7 @@ public class MatchPanel extends JPanel {
         gbc_mScheduleButton.gridy = 1;
         mSchedulePanelInner.add(mScheduleButton, gbc_mScheduleButton);
 
-        mCancelButton = new JButton("X");
+        mCancelButton = new JButton("\u2715");
         mCancelButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 cancelMatch();
@@ -432,10 +432,10 @@ public class MatchPanel extends JPanel {
             }
         });
 
-        mKickPlayer2Button = new JButton("Kick");
+        mKickPlayer2Button = new JButton("\u21ba");
         mKickPlayer2Button.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                kickPlayer(mMatch.getPlayer2());
+                replacePlayer(mMatch.getPlayer2());
             }
         });
         mKickPlayer2Button.setOpaque(false);
@@ -663,6 +663,27 @@ public class MatchPanel extends JPanel {
         }
     }
 
+    private void replacePlayer(final Member memberToReplace) {
+        DB.executeTransaction(new DB.Transaction<Void>() {
+            @Override
+            public void run() {
+                // Keep the remaining player for the replacement match.
+                final Member remainingMember = memberToReplace.equals(mMatch
+                        .getPlayer1()) ? mMatch.getPlayer2() : mMatch
+                        .getPlayer1();
+
+                mTempHints.add(new TempHintExplicitlyIncludePlayer(
+                        remainingMember));
+
+                mTempHints.add(new TempHintImplicitlyExcludePlayer(
+                        memberToReplace));
+
+                // Find a new match.
+                scheduleMatch();
+            }
+        });
+    }
+
     private void kickPlayer(final Member memberToKick) {
         DB.executeTransaction(new DB.Transaction<Void>() {
             @Override
@@ -702,18 +723,20 @@ public class MatchPanel extends JPanel {
         }
     }
 
-    private void clearHints() {
+    private void resetHints() {
         mTempHints.clear();
         mNoMoreMatches = false;
 
         mPlayer1Hint = null;
         mPlayer2Hint = null;
 
-        mPlayer1Field.setText("");
-        mPlayer2Field.setText("");
+        mPlayer1Field.setText(mMatch != null ? mMatch.getPlayer1()
+                .getNameFormatted() : "");
+        mPlayer2Field.setText(mMatch != null ? mMatch.getPlayer2()
+                .getNameFormatted() : "");
 
-        mPlayer1Field.setEditable(true);
-        mPlayer2Field.setEditable(true);
+        mPlayer1Field.setEditable(mMatch == null);
+        mPlayer2Field.setEditable(mMatch == null);
         mScheduleButton.setEnabled(true);
     }
 
