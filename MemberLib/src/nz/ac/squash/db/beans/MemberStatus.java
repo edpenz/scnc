@@ -186,4 +186,16 @@ public class MemberStatus {
                     }
                 });
     }
+
+    public static MemberStatus getPreviousStatus(final Member member) {
+        return DB.executeTransaction(new DB.Transaction<MemberStatus>() {
+            @Override
+            public void run() {
+                setResult(Utility
+                        .first(query(MemberStatus.class,
+                                "s where s.mMember = ?0 order by s.mDate desc",
+                                member)));
+            }
+        });
+    }
 }

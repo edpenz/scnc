@@ -41,6 +41,7 @@ import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.SessionHelper;
+import nz.ac.squash.util.Utility;
 import nz.ac.squash.windows.RegisterWindow;
 
 import org.apache.commons.lang3.StringUtils;
@@ -429,14 +430,21 @@ public class SignInPanel extends JLayeredPane {
 
     private void showMemberPanel(Member member) {
         mSelectedMember = member;
-        MemberStatus previousStatus = new MemberStatus(member);
+        final MemberStatus previousStatus = MemberStatus
+                .getPreviousStatus(member);
 
-        int skill = Math.round((previousStatus.getSkillLevel() - 1.f) * 3.f);
+        final float skillLevel;
+        if (previousStatus != null) skillLevel = previousStatus.getSkillLevel();
+        else skillLevel = member.getSkillLevel();
+
+        int skill = Math.round((skillLevel - 1.f) * 3.f);
         if (skill < 0) skill = 6;
         mSkillSlider.setValue(skill);
 
-        mWantGamesRadio.setSelected(previousStatus.wantsGames());
-        mWantTrainingRadio.setSelected(!previousStatus.wantsGames());
+        final boolean wantsGames = previousStatus != null &&
+                                   previousStatus.wantsGames();
+        mWantGamesRadio.setSelected(wantsGames);
+        mWantTrainingRadio.setSelected(!wantsGames);
 
         final boolean hasPaidFees = StringUtils.isNotBlank(member
                 .getPaymentStatus());
@@ -457,10 +465,12 @@ public class SignInPanel extends JLayeredPane {
             mFeesLabel.setForeground(Color.RED);
         }
 
-        mSignInButton
-                .setText(previousStatus.isPresent() ? "Update" : "Sign-in");
-
-        mSignOutButton.setEnabled(previousStatus.isPresent());
+        final boolean isSignedIn = previousStatus != null &&
+                                   Utility.today().before(
+                                           previousStatus.getDate()) &&
+                                   previousStatus.isPresent();
+        mSignInButton.setText(isSignedIn ? "Update" : "Sign-in");
+        mSignOutButton.setEnabled(isSignedIn);
 
         mPlayerPanel.setVisible(true);
         mRegisterButton.setVisible(false);
