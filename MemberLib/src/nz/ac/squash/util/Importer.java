@@ -155,20 +155,19 @@ public class Importer {
                     continue;
                 }
 
-                imported.setName(lineParts[1]);
-                imported.setNickname(lineParts[2]);
-                imported.setEmail(lineParts[3]);
+                imported.setName(getOrNull(lineParts, 1));
+                imported.setNickname(getOrNull(lineParts, 2));
+                imported.setEmail(getOrNull(lineParts, 3));
 
-                imported.setStudentStatus(lineParts[4]);
-                imported.setStudentId(lineParts[5]);
+                imported.setStudentStatus(getOrNull(lineParts, 4));
+                imported.setStudentId(getOrNull(lineParts, 5));
 
-                imported.setSkillLevel(parseSkillLevel(lineParts[6],
-                        lineParts[7]));
+                imported.setSkillLevel(parseSkillLevel(getOrNull(lineParts, 6),
+                        getOrNull(lineParts, 7)));
+
+                imported.setActive(StringUtils.isEmpty(getOrNull(lineParts, 9)));
 
                 // Optional fields.
-                if (lineParts.length > 9) imported.setActive(StringUtils
-                        .isEmpty(lineParts[9]));
-
                 if (lineParts.length > 11) imported
                         .setPaymentStatus(lineParts[11]);
 
@@ -193,6 +192,10 @@ public class Importer {
         }
 
         return actions;
+    }
+
+    private static <T> T getOrNull(T[] array, int index) {
+        return index < array.length ? array[index] : null;
     }
 
     private static float parseSkillLevel(String level, String grade) {

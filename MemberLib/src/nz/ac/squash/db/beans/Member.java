@@ -28,7 +28,7 @@ public class Member {
     private long mID;
 
     private Date mSignupTime;
-    private boolean mActive;
+    private boolean mActive = true;
 
     // Identifying fields.
     private String mName;
