@@ -21,6 +21,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Date;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -46,7 +47,7 @@ import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 
 public class ImportWindow extends JDialog {
-    private static final String DOWNLOAD_URI = "";
+    private static final File DOWNLOAD_CONFIG_FILE = new File("db/import.uri");
 
     private JButton mDownloadButton;
     private JProgressBar mDownloadProgress;
@@ -255,6 +256,13 @@ public class ImportWindow extends JDialog {
         final Thread downloadThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                final String importUri;
+                try (Scanner s = new Scanner(DOWNLOAD_CONFIG_FILE)) {
+                    importUri = s.nextLine();
+                } catch (IOException e) {
+                    return;
+                }
+
                 final String filename = "Google Docs membership at " +
                                         Utility.FILE_SAFE_FORMATTER
                                                 .format(new Date()) + ".csv";
@@ -263,7 +271,7 @@ public class ImportWindow extends JDialog {
                 ReadableByteChannel rbc = null;
                 FileOutputStream fos = null;
                 try {
-                    website = new URL(DOWNLOAD_URI);
+                    website = new URL(importUri);
                     rbc = Channels.newChannel(website.openStream());
                     fos = new FileOutputStream("db/" + filename);
                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
