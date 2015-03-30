@@ -113,7 +113,6 @@ public class MatchResult {
             @Override
             public void run() {
                 for (MatchResult result : listAll(MatchResult.class)) {
-
                     int winnerPos = ladder.size();
                     int loserPos = ladder.size();
 

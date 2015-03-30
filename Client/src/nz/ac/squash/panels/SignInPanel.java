@@ -36,6 +36,7 @@ import javax.swing.SwingUtilities;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
+import nz.ac.squash.db.beans.MatchResult;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.Member.MemberResults;
 import nz.ac.squash.db.beans.MemberStatus;
@@ -374,6 +375,7 @@ public class SignInPanel extends JLayeredPane {
             @Override
             public void run() {
                 update(newStatus);
+                MatchResult.addToLadder(newStatus.getMember());
             }
         });
 

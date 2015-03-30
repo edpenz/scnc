@@ -24,6 +24,7 @@ import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import nz.ac.squash.panels.LadderPanel;
 import nz.ac.squash.panels.SchedulePanel;
 import nz.ac.squash.panels.SignInPanel;
 import nz.ac.squash.util.Utility;
@@ -86,6 +87,7 @@ public class ClientWindow extends JFrame {
     private JPanel mPanelFrame;
     private SchedulePanel mSchedulePanel;
     private SignInPanel mSignInPanel;
+    private LadderPanel mLadderPanel;
 
     private ClientWindow() {
         createContents();
@@ -194,15 +196,13 @@ public class ClientWindow extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 showPanel(SignInPanel.class);
                 mSignInPanel.clear();
-                // mCheckinPanel.resetSearch();
-                // mCheckinPanel.refreshLadder();
             }
         });
         panel_5.setLayout(new GridLayout(1, 0, 10, 0));
 
         JButton scheduleButton = new JButton("Match Schedule");
         scheduleButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
+            public void actionPerformed(ActionEvent e) {
                 showPanel(SchedulePanel.class);
             }
         });
@@ -210,13 +210,22 @@ public class ClientWindow extends JFrame {
         panel_5.add(scheduleButton);
         panel_5.add(checkinButton);
         JButton challengeButton = new JButton("Request a Match");
-        challengeButton.setEnabled(false);
         challengeButton.setOpaque(false);
         challengeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showChallengeDialog();
             }
         });
+
+        JButton ladderButton = new JButton("Ladder");
+        ladderButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showPanel(LadderPanel.class);
+                mLadderPanel.refreshLadder();
+            }
+        });
+        ladderButton.setOpaque(false);
+        panel_5.add(ladderButton);
         panel_5.add(challengeButton);
 
         JPanel panel_4 = new JPanel();
@@ -243,6 +252,9 @@ public class ClientWindow extends JFrame {
 
         mSignInPanel = new SignInPanel();
         mPanelFrame.add(mSignInPanel, SignInPanel.class.getSimpleName());
+
+        mLadderPanel = new LadderPanel();
+        mPanelFrame.add(mLadderPanel, LadderPanel.class.getSimpleName());
     }
 
     private void showPanel(Class<?> panel) {
