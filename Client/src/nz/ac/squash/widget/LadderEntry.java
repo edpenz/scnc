@@ -2,7 +2,6 @@ package nz.ac.squash.widget;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 
@@ -34,7 +33,6 @@ public class LadderEntry extends JPanel {
     }
 
     private void createContents() {
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setBackground(Color.WHITE);
         setLayout(new BorderLayout(0, 0));
 
@@ -59,9 +57,5 @@ public class LadderEntry extends JPanel {
         mRankLabel.setForeground(present ? Color.BLACK : Color.LIGHT_GRAY);
         mNameLabel.setForeground(present ? Color.BLACK : Color.LIGHT_GRAY);
         mPresentLabel.setVisible(present);
-    }
-
-    public void flash() {
-
     }
 }
