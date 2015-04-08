@@ -92,7 +92,7 @@ public class ClientWindow extends JFrame {
     private ClientWindow() {
         createContents();
 
-        // setSize(Toolkit.getDefaultToolkit().getScreenSize());
+        setSize(Toolkit.getDefaultToolkit().getScreenSize());
 
         getRootPane().getActionMap().put("stats", new AbstractAction() {
             @Override
