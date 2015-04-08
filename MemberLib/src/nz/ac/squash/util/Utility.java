@@ -59,7 +59,7 @@ public class Utility {
     public static void safeClose(Closeable... closeables) {
         for (Closeable closeable : closeables) {
             try {
-                closeable.close();
+                if (closeable != null) closeable.close();
             } catch (IOException e) {
                 // Ignore.
             }
@@ -127,9 +127,15 @@ public class Utility {
         for (String namePart : nameParts) {
             final boolean isPreposition = ArrayUtils.contains(
                     NAME_PREPOSITIONS, namePart);
+            final boolean isAbbreviation = namePart.endsWith(".");
 
-            name.append(!isPreposition ? WordUtils.capitalize(namePart)
-                    : namePart);
+            if (isPreposition) {
+                name.append(namePart);
+            } else if (isAbbreviation) {
+                name.append(namePart.toUpperCase());
+            } else {
+                name.append(WordUtils.capitalize(namePart));
+            }
             name.append(" ");
         }
 
