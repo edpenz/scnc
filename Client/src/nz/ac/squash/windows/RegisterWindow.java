@@ -355,15 +355,17 @@ public class RegisterWindow extends JDialog {
             writer.print(Utility.SPREADSHEET_FORMATTER.format(proto
                     .getSignupTime()) + ",");
             writer.print(proto.getName() + ",");
-            writer.print(proto.getNickname() + ",");
+            writer.print(proto.getNickname() != null ? proto.getNickname() +
+                                                       "," : ",");
             writer.print(proto.getEmail() + ",");
 
             writer.print(proto.getStudentStatus() + ",");
             writer.print(proto.getStudentId() + ",");
 
             writer.print("" + ",");
+
             writer.print("" + ",");
-            writer.print("" + ",");
+            writer.print("Club night PC" + ",");
 
             writer.print("\r\n");
             writer.flush();
