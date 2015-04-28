@@ -77,8 +77,16 @@ public class Importer {
                     newInfo.isActive());
             action.mNewName = Utility.returnIfDifferent(oldInfo.getName(),
                     newInfo.getName());
-            action.mNewNickname = Utility.returnIfDifferent(
-                    oldInfo.getNickname(), newInfo.getNickname());
+            if (!Utility.eqOrNull(oldInfo.getNickname(), newInfo.getNickname())) {
+                boolean oldBlank = StringUtils.isBlank(oldInfo.getNickname());
+                boolean newBlank = StringUtils.isBlank(newInfo.getNickname());
+
+                if (!newBlank) {
+                    action.mNewNickname = newInfo.getNickname();
+                } else if (newBlank && !oldBlank) {
+                    action.mNewNickname = "";
+                }
+            }
             action.mNewPaymentStatus = Utility.returnIfDifferent(
                     oldInfo.getPaymentStatus(), newInfo.getPaymentStatus());
 
