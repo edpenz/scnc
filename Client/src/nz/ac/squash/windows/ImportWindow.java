@@ -46,6 +46,8 @@ import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 
+import org.apache.log4j.Logger;
+
 public class ImportWindow extends JDialog {
     private static final File DOWNLOAD_CONFIG_FILE = new File("db/import.uri");
 
@@ -252,15 +254,17 @@ public class ImportWindow extends JDialog {
 
     private void downloadMemberList() {
         mDownloadButton.setEnabled(false);
+        mDownloadProgress.setIndeterminate(true);
 
         final Thread downloadThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
+            private boolean tryDownload() {
                 final String importUri;
                 try (Scanner s = new Scanner(DOWNLOAD_CONFIG_FILE)) {
                     importUri = s.nextLine();
                 } catch (IOException e) {
-                    return;
+                    Logger.getLogger(ImportWindow.class).warn(
+                            "Failed to find download URI file");
+                    return false;
                 }
 
                 final String filename = "Google Docs membership at " +
@@ -275,17 +279,27 @@ public class ImportWindow extends JDialog {
                     rbc = Channels.newChannel(website.openStream());
                     fos = new FileOutputStream("db/" + filename);
                     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+
+                    return true;
                 } catch (IOException e) {
-                    return;
+                    Logger.getLogger(ImportWindow.class).warn(
+                            "Failed to download membership list", e);
+                    return false;
                 } finally {
                     Utility.safeClose(rbc, fos);
                 }
+            }
+
+            @Override
+            public void run() {
+                final boolean sucessfullyDownloaded = tryDownload();
 
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        rescanDir();
+                        if (sucessfullyDownloaded) rescanDir();
                         mDownloadButton.setEnabled(true);
+                        mDownloadProgress.setIndeterminate(false);
                     }
                 });
             }

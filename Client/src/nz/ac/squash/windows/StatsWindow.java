@@ -38,6 +38,7 @@ import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Match;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.MemberStatus;
+import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 
@@ -123,21 +124,16 @@ public class StatsWindow extends JDialog {
         mTable.setPreferredScrollableViewportSize(new Dimension(325, 300));
         scrollPane.setViewportView(mTable);
         mTable.setModel(new DefaultTableModel(new Object[][] {}, new String[] {
-                "Member", "Match Count", "Wants Games" }) {
-            Class[] columnTypes = new Class[] { String.class, Integer.class,
-                    Boolean.class };
+                "Name", "Fee status", "# Matches", "Playing" }) {
+            Class[] columnTypes = new Class[] { String.class, String.class,
+                    Integer.class, Boolean.class };
 
             public Class getColumnClass(int columnIndex) {
                 return columnTypes[columnIndex];
             }
-
-            boolean[] columnEditables = new boolean[] { false, false, false };
-
-            public boolean isCellEditable(int row, int column) {
-                return columnEditables[column];
-            }
         });
-        mTable.getColumnModel().getColumn(0).setPreferredWidth(250);
+        mTable.getColumnModel().getColumn(0).setPreferredWidth(150);
+        mTable.getColumnModel().getColumn(3).setPreferredWidth(80);
 
         JPanel panel = new JPanel();
         FlowLayout flowLayout = (FlowLayout) panel.getLayout();
@@ -193,11 +189,22 @@ public class StatsWindow extends JDialog {
 
         final DefaultTableModel model = (DefaultTableModel) mTable.getModel();
         for (Entry<Member, Integer> entry : matchCounts.entrySet()) {
-            String name = entry.getKey().getNameFormatted();
-            Member member = entry.getKey();
+            final Member member = entry.getKey();
+            final int matchCount = entry.getValue();
+
+            String name = member.getNameFormatted();
             MemberStatus status = statusMapping.get(member);
 
-            model.addRow(new Object[] { name, entry.getValue(),
+            int nightsAttended = SessionHelper.current()
+                    .getPriorNightsAttended(member) + 1;
+            boolean hasPaid = member.hasPaid();
+            String paymentStatus = "";
+            if (!hasPaid && nightsAttended == 2) paymentStatus = "Due";
+            else if (!hasPaid && nightsAttended == 3) paymentStatus = "Overdue";
+            else if (!hasPaid && nightsAttended > 3) paymentStatus = "Overdue +" +
+                                                                     (nightsAttended - 1);
+
+            model.addRow(new Object[] { name, paymentStatus, matchCount,
                     status != null ? status.wantsGames() : false });
         }
 
@@ -205,6 +212,6 @@ public class StatsWindow extends JDialog {
                 model);
         mTable.setRowSorter(sorter);
 
-        sorter.toggleSortOrder(1);
+        sorter.toggleSortOrder(2);
     }
 }
