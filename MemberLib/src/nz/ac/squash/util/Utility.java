@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -116,32 +119,99 @@ public class Utility {
     private static final String[] NAME_PREPOSITIONS = new String[] { "van",
             "von", "de", "der" };
 
+    public static String formatNameLong(String fullname, String nickname) {
+        String cleanedFullname = cleanName(fullname);
+        String cleanedNickname = cleanName(nickname);
+
+        final List<String> nameParts = new ArrayList<>();
+        Collections.addAll(nameParts, StringUtils.split(cleanedFullname));
+
+        capitaliseNameParts(nameParts);
+        insertNickname(nameParts, capitaliseNamePart(cleanedNickname));
+
+        return StringUtils.join(nameParts, " ");
+    }
+
+    private static void insertNickname(List<String> nameParts, String nickname) {
+        if (StringUtils.isEmpty(nickname)) return;
+
+        String quotedNickname = String.format("'%s'", nickname);
+
+        int nicknameIndex = nameParts.indexOf(nickname);
+        if (nicknameIndex > 0) {
+            nameParts.set(nicknameIndex, quotedNickname);
+        } else if (nicknameIndex < 0) {
+            nameParts.add(1, quotedNickname);
+        }
+    }
+
     public static String formatName(String fullname, String nickname) {
-        final String[] nameParts = StringUtils.split(fullname.toLowerCase());
-        final boolean hasNickname = StringUtils.isNotBlank(nickname);
+        String cleanedFullname = cleanName(fullname);
+        String cleanedNickname = cleanName(nickname);
 
-        StringBuilder name = new StringBuilder(fullname.length());
-        if (hasNickname) {
-            nameParts[0] = WordUtils.capitalizeFully(nickname);
+        final List<String> nameParts = new ArrayList<>();
+        Collections.addAll(nameParts, StringUtils.split(cleanedFullname));
+
+        capitaliseNameParts(nameParts);
+        replaceNickname(nameParts, capitaliseNamePart(cleanedNickname));
+        removeMiddleNames(nameParts);
+
+        return StringUtils.join(nameParts, " ");
+    }
+
+    public static String cleanName(String name) {
+        return name != null ? name.trim().toLowerCase() : null;
+    }
+
+    private static void capitaliseNameParts(List<String> nameParts) {
+        for (int i = 0; i < nameParts.size(); ++i) {
+            String namePart = nameParts.get(i);
+            nameParts.set(i, capitaliseNamePart(namePart));
         }
-        for (String namePart : nameParts) {
-            final boolean isPreposition = ArrayUtils.contains(
-                    NAME_PREPOSITIONS, namePart);
-            final boolean isAbbreviation = namePart.endsWith(".");
+    }
 
-            if (isPreposition) {
-                name.append(namePart);
-            } else if (isAbbreviation) {
-                name.append(namePart.toUpperCase());
+    private static String capitaliseNamePart(String namePart) {
+        if (namePart == null) return null;
+
+        boolean isPreposition = ArrayUtils
+                .contains(NAME_PREPOSITIONS, namePart);
+        boolean isAbbreviation = namePart.endsWith(".");
+
+        if (isPreposition) {
+            return namePart;
+        } else if (isAbbreviation) {
+            return namePart.toUpperCase();
+        } else {
+            return WordUtils.capitalizeFully(namePart);
+        }
+    }
+
+    private static void replaceNickname(List<String> nameParts, String nickname) {
+        boolean hasNickname = StringUtils.isNotBlank(nickname);
+        if (!hasNickname) return;
+
+        boolean nicknameIsDifferent = !nickname.equals(nameParts.get(0));
+        if (!nicknameIsDifferent) return;
+
+        nameParts.remove(nickname);
+        nameParts.add(0, String.format("'%s'", nickname));
+    }
+
+    private static void removeMiddleNames(List<String> nameParts) {
+        for (int i = 1; i < nameParts.size();) {
+            String namePart = nameParts.get(i);
+
+            boolean hasMoreParts = i < nameParts.size() - 1;
+            boolean isPreposition = ArrayUtils.contains(NAME_PREPOSITIONS,
+                    namePart);
+            boolean isShort = namePart.length() <= 3;
+
+            if (hasMoreParts && !isPreposition && !isShort) {
+                nameParts.remove(i);
             } else {
-                name.append(WordUtils.capitalize(namePart));
+                ++i;
             }
-            name.append(" ");
         }
-
-        name.deleteCharAt(name.length() - 1);
-
-        return name.toString();
     }
 
     private static Class<?> sEntryClass = null;
