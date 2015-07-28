@@ -15,6 +15,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import nz.ac.squash.db.DB;
+import nz.ac.squash.util.NameUtils;
 import nz.ac.squash.util.Tuple;
 import nz.ac.squash.util.Utility;
 
@@ -183,7 +184,11 @@ public class Member {
     }
 
     public String getNameFormatted() {
-        return Utility.formatName(mName, mNickname);
+        return NameUtils.formatName(mName, mNickname);
+    }
+
+    public String getNameFormattedLong() {
+        return NameUtils.formatNameLong(mName, mNickname);
     }
 
     private static String stripName(String input) {
@@ -346,14 +351,6 @@ public class Member {
         }
 
         return toReturn;
-    }
-
-    private static int sumScore(int[] score) {
-        int sum = 0;
-        for (int i : score) {
-            sum += i;
-        }
-        return sum;
     }
 
     public static class MemberResults extends ArrayList<Member> {

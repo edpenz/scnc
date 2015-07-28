@@ -19,6 +19,7 @@ import java.awt.event.MouseEvent;
 import java.util.concurrent.ExecutorService;
 
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -183,6 +184,17 @@ public class SignInPanel extends JLayeredPane {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     handleMemberSelected(mResultList.getSelectedValue());
                 }
+            }
+        });
+        mResultList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list,
+                    Object value, int index, boolean isSelected,
+                    boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
+                label.setText(((Member) value).getNameFormattedLong());
+                return label;
             }
         });
         setLayer(mResultList, 2);
@@ -400,7 +412,7 @@ public class SignInPanel extends JLayeredPane {
         if (member == null) return;
 
         mSearchHintLabel.setVisible(false);
-        mSearchField.setText(member.getNameFormatted());
+        mSearchField.setText(member.getNameFormattedLong());
         updateResultData(new MemberResults());
 
         showMemberPanel(member);

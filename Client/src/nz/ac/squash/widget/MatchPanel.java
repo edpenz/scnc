@@ -326,7 +326,7 @@ public class MatchPanel extends JPanel {
                                                         mPlayer1Hint));
 
                                         mPlayer1Field.setText(mPlayer1Hint
-                                                .getNameFormatted());
+                                                .getNameFormattedLong());
                                         mPlayer1Field.setEditable(false);
                                     }
                                 }
@@ -421,7 +421,7 @@ public class MatchPanel extends JPanel {
                                                         mPlayer2Hint));
 
                                         mPlayer2Field.setText(mPlayer2Hint
-                                                .getNameFormatted());
+                                                .getNameFormattedLong());
                                         mPlayer2Field.setEditable(false);
                                     }
                                 }
@@ -599,8 +599,8 @@ public class MatchPanel extends JPanel {
         mKickPlayer2Button.setEnabled(mMatch != null);
 
         if (mMatch != null) {
-            mPlayer1Field.setText(mMatch.getPlayer1().getNameFormatted());
-            mPlayer2Field.setText(mMatch.getPlayer2().getNameFormatted());
+            mPlayer1Field.setText(mMatch.getPlayer1().getNameFormattedLong());
+            mPlayer2Field.setText(mMatch.getPlayer2().getNameFormattedLong());
         } else {
             mPlayer1Field.setText("");
             mPlayer2Field.setText("");
@@ -731,9 +731,9 @@ public class MatchPanel extends JPanel {
         mPlayer2Hint = null;
 
         mPlayer1Field.setText(mMatch != null ? mMatch.getPlayer1()
-                .getNameFormatted() : "");
+                .getNameFormattedLong() : "");
         mPlayer2Field.setText(mMatch != null ? mMatch.getPlayer2()
-                .getNameFormatted() : "");
+                .getNameFormattedLong() : "");
 
         mPlayer1Field.setEditable(mMatch == null);
         mPlayer2Field.setEditable(mMatch == null);
