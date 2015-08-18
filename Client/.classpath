@@ -16,5 +16,6 @@
 			<attribute name="javadoc_location" value="file:/C:/Program%20Files/Hibernate/documentation/javadocs/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/log4j-additions.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

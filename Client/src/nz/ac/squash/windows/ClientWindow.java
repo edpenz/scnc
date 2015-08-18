@@ -12,7 +12,6 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
 import java.util.Date;
 
 import javax.swing.AbstractAction;
@@ -39,6 +38,7 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.pollerosoftware.log4j.additions.appenders.LazyFileAppender;
 
 public class ClientWindow extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -58,17 +58,18 @@ public class ClientWindow extends JFrame {
 
         // To file.
         FileAppender fileAppender;
-        try {
-            fileAppender = new FileAppender(fileLayout,
-                    "logs/" + Utility.FILE_SAFE_FORMATTER.format(new Date()) +
-                            ".log");
-            fileAppender.setThreshold(Level.INFO);
-            BasicConfigurator.configure(fileAppender);
-        } catch (IOException e1) {
-        }
+        fileAppender = new LazyFileAppender();
+        fileAppender.setLayout(fileLayout);
+        fileAppender.setFile("logs/" +
+                             Utility.FILE_SAFE_FORMATTER.format(new Date()) +
+                             ".log");
+        fileAppender.activateOptions();
+        fileAppender.setThreshold(Level.INFO);
+        BasicConfigurator.configure(fileAppender);
 
         Logger.getRootLogger().setLevel(Level.ALL);
         Logger.getLogger("org.hibernate").setLevel(Level.WARN);
+        Logger.getLogger("com.mchange").setLevel(Level.WARN);
 
         // Theme GUI.
         System.setProperty("awt.useSystemAAFontSettings", "on");
