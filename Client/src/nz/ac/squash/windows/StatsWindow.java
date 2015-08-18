@@ -199,10 +199,26 @@ public class StatsWindow extends JDialog {
                     .getPriorNightsAttended(member) + 1;
             boolean hasPaid = member.hasPaid();
             String paymentStatus = "";
-            if (!hasPaid && nightsAttended == 2) paymentStatus = "Due";
-            else if (!hasPaid && nightsAttended == 3) paymentStatus = "Overdue";
-            else if (!hasPaid && nightsAttended > 3) paymentStatus = "Overdue +" +
-                                                                     (nightsAttended - 1);
+            if (!hasPaid) {
+                switch (nightsAttended) {
+                case 0:
+                case 1:
+                    paymentStatus = "Trial";
+                    break;
+
+                case 2:
+                    paymentStatus = "Due";
+                    break;
+
+                case 3:
+                    paymentStatus = "Overdue";
+                    break;
+
+                default:
+                    paymentStatus = "Overdue +" + (nightsAttended - 1);
+                    break;
+                }
+            }
 
             model.addRow(new Object[] { name, paymentStatus, matchCount,
                     status != null ? status.wantsGames() : false });
