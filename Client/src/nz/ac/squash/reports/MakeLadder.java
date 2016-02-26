@@ -14,13 +14,11 @@ import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.Utility;
 
 public class MakeLadder {
-
-    public static void main(String[] args) throws IOException {
-
+    public static void makeReport() throws IOException {
         List<Member> ladder = SessionHelper.current().getLadder();
 
-        Date fourWeeksAgo = new Date(Utility.today().getTime() - 4l * 7 * 24 *
-                                     60 * 60 * 1000);
+        Date fourWeeksAgo = new Date(
+                Utility.today().getTime() - 4l * 7 * 24 * 60 * 60 * 1000);
         Set<Member> recentMembers = new HashSet<>();
         for (MemberStatus status : MemberStatus.getLatestStatus()) {
             if (status.getDate().after(fourWeeksAgo)) {
@@ -28,7 +26,7 @@ public class MakeLadder {
             }
         }
 
-        File ladderFile = new File("logs/ladder.csv");
+        File ladderFile = new File("logs/ladder_recent.csv");
         FileWriter fw = new FileWriter(ladderFile);
         int i = 1;
         for (Member member : ladder) {
@@ -47,7 +45,10 @@ public class MakeLadder {
             ++i;
         }
         fw.close();
+    }
 
+    public static void main(String[] args) throws IOException {
+        makeReport();
         System.exit(0);
     }
 }

@@ -22,7 +22,7 @@ public class ReportFairness {
     private static final DateFormat sDateFormat = new SimpleDateFormat(
             "yyyy-MM-dd");
 
-    public static void main(String[] args) throws IOException {
+    public static void makeReport() throws IOException {
         File log = new File("logs/fairness.csv");
         PrintStream writer = new PrintStream(log);
 
@@ -71,7 +71,6 @@ public class ReportFairness {
         writeHistogram(writer, today, gameCount);
 
         writer.close();
-        System.exit(0);
     }
 
     private static void writeHistogram(PrintStream stream, Date date,
@@ -90,5 +89,10 @@ public class ReportFairness {
             stream.print("," + String.valueOf(i));
         }
         stream.println();
+    }
+
+    public static void main(String[] args) throws IOException {
+        makeReport();
+        System.exit(0);
     }
 }

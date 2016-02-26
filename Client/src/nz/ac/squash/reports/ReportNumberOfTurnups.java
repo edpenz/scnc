@@ -32,15 +32,14 @@ public class ReportNumberOfTurnups {
             NightsAttended = nightsAttended;
             HasPaid = hasPaid;
         }
-
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void makeReport() throws IOException {
         File turnupsFile = new File("logs/turnups.csv");
         FileWriter fw = new FileWriter(turnupsFile);
 
-        Collection<MemberStatus> statuses = DB
-                .executeTransaction(new Transaction<Collection<MemberStatus>>() {
+        Collection<MemberStatus> statuses = DB.executeTransaction(
+                new Transaction<Collection<MemberStatus>>() {
                     @Override
                     public void run() {
                         setResult(listAll(MemberStatus.class));
@@ -49,11 +48,11 @@ public class ReportNumberOfTurnups {
 
         HashMap<Member, Set<Date>> counts = new HashMap<Member, Set<Date>>();
         for (MemberStatus status : statuses) {
-            if (!counts.containsKey(status.getMember())) counts.put(
-                    status.getMember(), new HashSet<Date>());
+            if (!counts.containsKey(status.getMember())) counts
+                    .put(status.getMember(), new HashSet<Date>());
 
-            counts.get(status.getMember()).add(
-                    Utility.stripTime(status.getDate()));
+            counts.get(status.getMember())
+                    .add(Utility.stripTime(status.getDate()));
         }
 
         List<MemberStats> stats = new ArrayList<MemberStats>();
@@ -90,7 +89,10 @@ public class ReportNumberOfTurnups {
         }
 
         fw.close();
+    }
 
+    public static void main(String[] args) throws IOException {
+        makeReport();
         System.exit(0);
     }
 }

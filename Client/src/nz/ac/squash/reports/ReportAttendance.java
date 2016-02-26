@@ -3,8 +3,6 @@ package nz.ac.squash.reports;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +17,7 @@ import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.Utility;
 
 public class ReportAttendance {
-    public static void main(String[] args) throws IOException {
+    public static void makeReport() throws IOException {
         File log = new File("logs/attendance.csv");
         PrintStream writer = new PrintStream(log);
 
@@ -59,6 +57,10 @@ public class ReportAttendance {
         }
 
         writer.close();
+    }
+
+    public static void main(String[] args) throws IOException {
+        makeReport();
         System.exit(0);
     }
 }

@@ -12,6 +12,8 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Date;
 
 import javax.swing.AbstractAction;
@@ -23,14 +25,6 @@ import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import nz.ac.squash.panels.LadderPanel;
-import nz.ac.squash.panels.SchedulePanel;
-import nz.ac.squash.panels.SignInPanel;
-import nz.ac.squash.util.Utility;
-import nz.ac.squash.widget.JBrandedPanel;
-import nz.ac.squash.widget.MatchPanel;
-import nz.ac.squash.widget.generic.JOverlay;
-
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
@@ -39,6 +33,15 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.pollerosoftware.log4j.additions.appenders.LazyFileAppender;
+
+import nz.ac.squash.panels.LadderPanel;
+import nz.ac.squash.panels.SchedulePanel;
+import nz.ac.squash.panels.SignInPanel;
+import nz.ac.squash.reports.Reports;
+import nz.ac.squash.util.Utility;
+import nz.ac.squash.widget.JBrandedPanel;
+import nz.ac.squash.widget.MatchPanel;
+import nz.ac.squash.widget.generic.JOverlay;
 
 public class ClientWindow extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -60,8 +63,8 @@ public class ClientWindow extends JFrame {
         FileAppender fileAppender;
         fileAppender = new LazyFileAppender();
         fileAppender.setLayout(fileLayout);
-        fileAppender.setFile("logs/" +
-                             Utility.FILE_SAFE_FORMATTER.format(new Date()) +
+        fileAppender.setFile(
+                "logs/" + Utility.FILE_SAFE_FORMATTER.format(new Date()) +
                              ".log");
         fileAppender.activateOptions();
         fileAppender.setThreshold(Level.INFO);
@@ -101,8 +104,8 @@ public class ClientWindow extends JFrame {
                 StatsWindow.showDialog(ClientWindow.this);
             }
         });
-        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "stats");
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "stats");
 
         getRootPane().getActionMap().put("schedule", new AbstractAction() {
             @Override
@@ -112,8 +115,8 @@ public class ClientWindow extends JFrame {
                 }
             }
         });
-        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "schedule");
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "schedule");
 
         getRootPane().getActionMap().put("import", new AbstractAction() {
             @Override
@@ -121,13 +124,13 @@ public class ClientWindow extends JFrame {
                 ImportWindow.showDialog(ClientWindow.this);
             }
         });
-        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), "import");
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), "import");
     }
 
     private void createContents() {
-        setIconImage(Toolkit.getDefaultToolkit().getImage(
-                ClientWindow.class.getResource("/images/Icon.png")));
+        setIconImage(Toolkit.getDefaultToolkit()
+                .getImage(ClientWindow.class.getResource("/images/Icon.png")));
         JPanel panel_6 = new JBrandedPanel();
         setContentPane(panel_6);
         setGlassPane(new JOverlay());
@@ -138,11 +141,19 @@ public class ClientWindow extends JFrame {
         setTitle("AUSC Scheduler");
         setResizable(false);
         setUndecorated(true);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                Reports.runAllReports();
+            }
+        });
+
         GridBagLayout gridBagLayout_5 = new GridBagLayout();
         gridBagLayout_5.columnWidths = new int[] { 0, 0 };
         gridBagLayout_5.rowHeights = new int[] { 0, 0, 0 };
         gridBagLayout_5.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-        gridBagLayout_5.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
+        gridBagLayout_5.rowWeights = new double[] { 0.0, 1.0,
+                Double.MIN_VALUE };
         getContentPane().setLayout(gridBagLayout_5);
 
         JPanel panel_2 = new JPanel();
