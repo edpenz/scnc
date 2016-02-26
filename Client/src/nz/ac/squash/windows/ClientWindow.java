@@ -14,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.Date;
 
 import javax.swing.AbstractAction;
@@ -60,6 +61,8 @@ public class ClientWindow extends JFrame {
         BasicConfigurator.configure(consoleAppender);
 
         // To file.
+        new File("logs/").mkdirs();
+
         FileAppender fileAppender;
         fileAppender = new LazyFileAppender();
         fileAppender.setLayout(fileLayout);
