@@ -14,11 +14,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -31,6 +35,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
 import nz.ac.squash.db.DB;
@@ -81,11 +86,8 @@ public class StatsWindow extends JDialog {
 
     private void createContents() {
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        setIconImage(Toolkit
-                .getDefaultToolkit()
-                .getImage(
-                        StatsWindow.class
-                                .getResource("/javax/swing/plaf/metal/icons/ocean/menu.gif")));
+        setIconImage(Toolkit.getDefaultToolkit().getImage(StatsWindow.class
+                .getResource("/javax/swing/plaf/metal/icons/ocean/menu.gif")));
         getContentPane().setBackground(Color.WHITE);
         GridBagLayout gridBagLayout = new GridBagLayout();
         gridBagLayout.columnWidths = new int[] { 0, 0 };
@@ -109,10 +111,10 @@ public class StatsWindow extends JDialog {
         getContentPane().add(lblStatistics, gbc_lblStatistics);
 
         scrollPane = new JScrollPane();
-        scrollPane
-                .setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        scrollPane
-                .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollPane.setHorizontalScrollBarPolicy(
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         GridBagConstraints gbc_scrollPane = new GridBagConstraints();
         gbc_scrollPane.insets = new Insets(5, 5, 5, 5);
         gbc_scrollPane.fill = GridBagConstraints.BOTH;
@@ -123,8 +125,8 @@ public class StatsWindow extends JDialog {
         mTable = new JTable();
         mTable.setPreferredScrollableViewportSize(new Dimension(325, 300));
         scrollPane.setViewportView(mTable);
-        mTable.setModel(new DefaultTableModel(new Object[][] {}, new String[] {
-                "Name", "Fee status", "# Matches", "Playing" }) {
+        mTable.setModel(new DefaultTableModel(new Object[][] {},
+                new String[] { "Name", "Fee status", "# Matches", "Playing" }) {
             Class[] columnTypes = new Class[] { String.class, String.class,
                     Integer.class, Boolean.class };
 
@@ -146,11 +148,41 @@ public class StatsWindow extends JDialog {
 
         mCancelButton = new JButton("Cancel");
         mCancelButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
+            public void actionPerformed(ActionEvent e) {
                 dispose();
             }
         });
+
+        JButton raffleButton = new JButton("Raffle");
+        raffleButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                doRaffle();
+            }
+        });
+        panel.add(raffleButton);
         panel.add(mCancelButton);
+    }
+
+    protected void doRaffle() {
+        Set<Integer> participatingRows = new HashSet<>();
+
+        final TableModel tableData = mTable.getModel();
+        final int rows = tableData.getRowCount();
+        for (int row = 0; row < rows; ++row) {
+            boolean hasPaid = "".equals(tableData.getValueAt(row, 1));
+            if (hasPaid) {
+                participatingRows.add(row);
+            }
+        }
+
+        if (participatingRows.size() > 0) {
+            int winner = new Random().nextInt(participatingRows.size());
+            int winnerModelRow = new ArrayList<>(participatingRows).get(winner);
+            int winnerViewRow = mTable.convertRowIndexToView(winnerModelRow);
+            mTable.setRowSelectionInterval(winnerViewRow, winnerViewRow);
+        } else {
+            mTable.clearSelection();
+        }
     }
 
     private void loadTable() {
