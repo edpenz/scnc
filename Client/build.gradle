@@ -1,0 +1,22 @@
+apply plugin: 'java'
+
+jar {
+    baseName 'SCNC'
+
+    manifest {
+        attributes('Main-Class': 'nz.ac.squash.windows.ClientWindow')
+    }
+
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'lib')
+
+    compile project(':MemberLib')
+
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.4'
+    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+
+    compile group: 'log4j', name: 'log4j', version: '1.2.17'
+}
