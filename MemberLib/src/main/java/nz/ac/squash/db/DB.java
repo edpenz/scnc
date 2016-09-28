@@ -1,21 +1,17 @@
 package nz.ac.squash.db;
 
+import nz.ac.squash.util.Utility;
+import org.apache.log4j.Logger;
+import org.hibernate.*;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-
-import nz.ac.squash.util.Utility;
-
-import org.apache.log4j.Logger;
-import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
-import org.hibernate.Query;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistry;
+import java.util.function.Supplier;
 
 public class DB {
     private static Logger sLogger = Logger.getLogger(DB.class);
@@ -26,32 +22,29 @@ public class DB {
             128);
 
     private static Transaction<?> sRunning = null;
-    private static final Thread sExecutor = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            while (!Thread.interrupted()) {
-                try {
-                    sRunning = sPendingTransactions.take();
-                } catch (InterruptedException e) {
-                    break;
-                }
-
-                try {
-                    long start = System.currentTimeMillis();
-
-                    sRunning.begin();
-                    sRunning.run();
-                    sRunning.end();
-
-                    long end = System.currentTimeMillis();
-                    sLogger.trace((end - start) + "ms to do " +
-                                  sRunning.dQueuedFrom.toString());
-                } catch (Exception ex) {
-                    sLogger.error("Transaction failed", ex);
-                }
-
-                sRunning = null;
+    private static final Thread sExecutor = new Thread(() -> {
+        while (!Thread.interrupted()) {
+            try {
+                sRunning = sPendingTransactions.take();
+            } catch (InterruptedException e) {
+                break;
             }
+
+            try {
+                long start = System.currentTimeMillis();
+
+                sRunning.begin();
+                sRunning.run();
+                sRunning.end();
+
+                long end = System.currentTimeMillis();
+                sLogger.trace((end - start) + "ms to do " +
+                        sRunning.dQueuedFrom.toString());
+            } catch (Exception ex) {
+                sLogger.error("Transaction failed", ex);
+            }
+
+            sRunning = null;
         }
     });
 
@@ -71,7 +64,18 @@ public class DB {
         return t.getResult();
     }
 
-    public static Transaction<?> queueTransaction(Transaction<?> t) {
+    public static <T> T executeTransaction(Supplier<T> s) {
+        Transaction<T> t = queueTransaction(s);
+        t.waitUntilDone();
+        return t.getResult();
+    }
+
+    public static void executeTransaction(Runnable r) {
+        Transaction<Void> t = queueTransaction(r);
+        t.waitUntilDone();
+    }
+
+    public static <T> Transaction<T> queueTransaction(Transaction<T> t) {
         if (Thread.currentThread() == sExecutor) {
             t.attach(sRunning);
             t.run();
@@ -86,6 +90,80 @@ public class DB {
         }
 
         return t;
+    }
+
+    public static <T> Transaction<T> queueTransaction(Supplier<T> s) {
+        Transaction<T> t = new Transaction<T>() {
+            @Override
+            public void run() {
+                setResult(s.get());
+            }
+        };
+
+        return queueTransaction(t);
+    }
+
+    public static Transaction<Void> queueTransaction(Runnable r) {
+        Transaction<Void> t = new Transaction<Void>() {
+            @Override
+            public void run() {
+                r.run();
+            }
+        };
+
+        return queueTransaction(t);
+    }
+
+    public static List<?> query(String hqlQuery, Object... params) {
+        final Query query = sRunning.mSession.createQuery(hqlQuery);
+
+        for (int i = 0; i < params.length; i++) {
+            query.setParameter(String.valueOf(i), params[i]);
+        }
+
+        return query.list();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> typedQuery(Class<T> clazz, String hqlQuery, Object... params) {
+        final Query query = sRunning.mSession.createQuery(hqlQuery);
+
+        for (int i = 0; i < params.length; i++) {
+            query.setParameter(String.valueOf(i), params[i]);
+        }
+
+        final List<?> results = query.list();
+
+        final List<T> filteredResults = new ArrayList<>();
+        for (Object row : results) {
+            if (clazz.isInstance(row)) {
+                filteredResults.add((T) row);
+            } else if (row instanceof Object[]) {
+                for (Object cell : (Object[]) row) {
+                    if (clazz.isInstance(cell)) {
+                        filteredResults.add((T) cell);
+                        break;
+                    }
+                }
+            }
+        }
+        return filteredResults;
+    }
+
+    // Shorthand for simple queries against a single table.
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> query(Class<T> type, String hqlQuery, Object... params) {
+        return (List<T>) query("from " + type.getName() + " " + hqlQuery, params);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> listAll(Class<T> clazz) {
+        return sRunning.mSession.createQuery("from " + clazz.getName()).list();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T get(Class<T> clazz, long id) {
+        return (T) sRunning.mSession.get(clazz, id);
     }
 
     public static abstract class Transaction<R> implements Runnable {
@@ -127,8 +205,6 @@ public class DB {
                 if (mIsDirty) {
                     mSession.getTransaction().commit();
                 }
-            } catch (Exception e) {
-                throw e;
             } finally {
                 mSession.close();
 
@@ -170,7 +246,7 @@ public class DB {
                 task.run();
             } else {
                 if (mDoAfter == null) {
-                    mDoAfter = new ArrayList<Runnable>();
+                    mDoAfter = new ArrayList<>();
                 }
                 mDoAfter.add(task);
             }
@@ -185,58 +261,23 @@ public class DB {
         }
 
         protected List<?> query(String hqlQuery, Object... params) {
-            final Query query = mSession.createQuery(hqlQuery);
-
-            for (int i = 0; i < params.length; i++) {
-                query.setParameter(String.valueOf(i), params[i]);
-            }
-
-            return query.list();
+            return DB.query(hqlQuery, params);
         }
 
-        @SuppressWarnings("unchecked")
-        protected <T> List<T> typedQuery(Class<T> clazz, String hqlQuery,
-                Object... params) {
-            final Query query = mSession.createQuery(hqlQuery);
-
-            for (int i = 0; i < params.length; i++) {
-                query.setParameter(String.valueOf(i), params[i]);
-            }
-
-            final List<?> results = query.list();
-
-            final List<T> filteredResults = new ArrayList<T>();
-            for (Object row : results) {
-                if (clazz.isInstance(row)) {
-                    filteredResults.add((T) row);
-                } else if (row instanceof Object[]) {
-                    for (Object cell : (Object[]) row) {
-                        if (clazz.isInstance(cell)) {
-                            filteredResults.add((T) cell);
-                            break;
-                        }
-                    }
-                }
-            }
-            return filteredResults;
+        protected <T> List<T> typedQuery(Class<T> clazz, String hqlQuery, Object... params) {
+            return DB.typedQuery(clazz, hqlQuery, params);
         }
 
-        // Shorthand for simple queries against a single table.
-        @SuppressWarnings("unchecked")
-        protected <T> List<T> query(Class<T> type, String hqlQuery,
-                Object... params) {
-            return (List<T>) query("from " + type.getName() + " " + hqlQuery,
-                    params);
+        protected <T> List<T> query(Class<T> type, String hqlQuery, Object... params) {
+            return DB.query(type, hqlQuery, params);
         }
 
-        @SuppressWarnings("unchecked")
         protected <T> List<T> listAll(Class<T> clazz) {
-            return mSession.createQuery("from " + clazz.getName()).list();
+            return DB.listAll(clazz);
         }
 
-        @SuppressWarnings("unchecked")
         protected <T> T get(Class<T> clazz, long id) {
-            return (T) mSession.get(clazz, id);
+            return DB.get(clazz, id);
         }
 
         protected void attach(Object object) {

@@ -1,18 +1,13 @@
 package nz.ac.squash.db.beans;
 
+import nz.ac.squash.db.DB;
+import nz.ac.squash.util.Utility;
+
+import javax.persistence.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-
-import nz.ac.squash.db.DB;
-import nz.ac.squash.db.DB.Transaction;
-import nz.ac.squash.util.Utility;
+import java.util.Optional;
 
 @Entity
 @Table(name = "member_statuses")
@@ -47,25 +42,23 @@ public class MemberStatus {
         mWantsGames = false;
 
         // Restore values from most recent status.
-        DB.executeTransaction(new DB.Transaction<Void>() {
-            @Override
-            public void run() {
-                List<MemberStatus> latestStatus = query(MemberStatus.class,
-                        "s where s.mMember = ?0 order by s.mDate desc", member);
-                if (!latestStatus.isEmpty()) {
-                    final MemberStatus latest = latestStatus.get(0);
+        DB.executeTransaction(() -> {
+            Optional<MemberStatus> latestStatus = DB.query(MemberStatus.class,
+                    "s where s.mMember = ?0 order by s.mDate desc", member)
+                    .stream()
+                    .findFirst();
 
-                    mSkillLevel = latest.getSkillLevel();
+            latestStatus.ifPresent(latest -> {
+                mSkillLevel = latest.getSkillLevel();
 
-                    mPresent = latest.mPresent;
-                    mWantsGames = latest.mWantsGames;
-                }
-            }
+                mPresent = latest.mPresent;
+                mWantsGames = latest.mWantsGames;
+            });
         });
     }
 
     public MemberStatus(Member member, float skillLevel, boolean present,
-            boolean wantsGames) {
+                        boolean wantsGames) {
         mDate = new Date();
         mMember = member;
 
@@ -137,65 +130,41 @@ public class MemberStatus {
     }
 
     public static Collection<MemberStatus> getPresentMembers() {
-        return DB
-                .executeTransaction(new Transaction<Collection<MemberStatus>>() {
-                    @Override
-                    public void run() {
-                        Date today = Utility.stripTime(new Date());
+        return DB.executeTransaction(() -> {
+            String query = "select s from MemberStatus as s "
+                    + "where s.mDate >= ?0 and s.mPresent = true and s.mDate = "
+                    + "(select max(mDate) from MemberStatus as m where s.mMember = m.mMember)";
+            Date today = Utility.today();
 
-                        setResult(typedQuery(
-                                MemberStatus.class,
-                                "select s from " +
-                                        MemberStatus.class.getName() +
-                                        " as s where s.mDate >= ?0 and s.mPresent = true and s.mDate = (select max(mDate) from " +
-                                        MemberStatus.class.getName() +
-                                        " as m where s.mMember = m.mMember)",
-                                today));
-                    }
-                });
+            return DB.typedQuery(MemberStatus.class, query, today);
+        });
     }
 
     public static Collection<MemberStatus> getLatestCheckins() {
-        return DB
-                .executeTransaction(new Transaction<Collection<MemberStatus>>() {
-                    @Override
-                    public void run() {
-                        setResult(typedQuery(
-                                MemberStatus.class,
-                                "select s from " +
-                                        MemberStatus.class.getName() +
-                                        " as s where s.mPresent = true and s.mDate = (select max(mDate) from " +
-                                        MemberStatus.class.getName() +
-                                        " as m where s.mMember = m.mMember)"));
-                    }
-                });
+        return DB.executeTransaction(() -> {
+            String query = "select s from MemberStatus as s "
+                    + "where s.mPresent = true and s.mDate = "
+                    + "(select max(mDate) from MemberStatus as m where s.mMember = m.mMember)";
+
+            return DB.typedQuery(MemberStatus.class, query);
+        });
     }
 
     public static Collection<MemberStatus> getLatestStatus() {
-        return DB
-                .executeTransaction(new Transaction<Collection<MemberStatus>>() {
-                    @Override
-                    public void run() {
-                        setResult(typedQuery(
-                                MemberStatus.class,
-                                "select s from " +
-                                        MemberStatus.class.getName() +
-                                        " as s where s.mDate = (select max(mDate) from " +
-                                        MemberStatus.class.getName() +
-                                        " as m where s.mMember = m.mMember)"));
-                    }
-                });
+        return DB.executeTransaction(() -> {
+            String query = "select s from MemberStatus as s "
+                    + "where s.mDate = "
+                    + "(select max(mDate) from MemberStatus as m where s.mMember = m.mMember)";
+
+            return DB.typedQuery(MemberStatus.class, query);
+        });
     }
 
-    public static MemberStatus getPreviousStatus(final Member member) {
-        return DB.executeTransaction(new DB.Transaction<MemberStatus>() {
-            @Override
-            public void run() {
-                setResult(Utility
-                        .first(query(MemberStatus.class,
-                                "s where s.mMember = ?0 order by s.mDate desc",
-                                member)));
-            }
+    public static MemberStatus getPreviousStatus(Member member) {
+        return DB.executeTransaction(() -> {
+            String query = "s where s.mMember = ?0 order by s.mDate desc";
+            List<MemberStatus> statuses = DB.query(MemberStatus.class, query, member);
+            return Utility.first(statuses);
         });
     }
 }
