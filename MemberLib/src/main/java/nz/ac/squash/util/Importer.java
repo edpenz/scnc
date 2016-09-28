@@ -3,13 +3,7 @@ package nz.ac.squash.util;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.util.*;
 
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
@@ -77,7 +71,7 @@ public class Importer {
                     newInfo.isActive());
             action.mNewName = Utility.returnIfDifferent(oldInfo.getName(),
                     newInfo.getName());
-            if (!Utility.eqOrNull(oldInfo.getNickname(), newInfo.getNickname())) {
+            if (!Objects.equals(oldInfo.getNickname(), newInfo.getNickname())) {
                 boolean oldBlank = StringUtils.isBlank(oldInfo.getNickname());
                 boolean newBlank = StringUtils.isBlank(newInfo.getNickname());
 

@@ -1,5 +1,7 @@
 package nz.ac.squash.util;
 
+import java.util.Objects;
+
 public class Tuple<A, B> {
 	private A a;
 	private B b;
@@ -34,8 +36,7 @@ public class Tuple<A, B> {
 	public boolean equals(Object o) {
 		if (o instanceof Tuple<?, ?>) {
 			Tuple<?, ?> other = (Tuple<?, ?>) o;
-			return Utility.eqOrNull(a, other.getA())
-					&& Utility.eqOrNull(b, other.getB());
+			return Objects.equals(a, other.getA()) && Objects.equals(b, other.getB());
 		}
 		return false;
 	}

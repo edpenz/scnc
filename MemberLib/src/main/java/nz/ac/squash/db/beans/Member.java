@@ -1,12 +1,6 @@
 package nz.ac.squash.db.beans;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 
 import javax.persistence.Entity;
@@ -144,38 +138,38 @@ public class Member {
     public boolean updateFrom(Member other) {
         boolean changed = false;
 
-        if (!Utility.eqOrNull(mActive, other.mActive)) {
+        if (!Objects.equals(mActive, other.mActive)) {
             changed = true;
             mActive = other.mActive;
         }
 
-        if (!Utility.eqOrNull(mName, other.mName)) {
+        if (!Objects.equals(mName, other.mName)) {
             changed = true;
             mName = other.mName;
         }
-        if (!Utility.eqOrNull(mNickname, other.mNickname)) {
+        if (!Objects.equals(mNickname, other.mNickname)) {
             changed = true;
             mNickname = other.mNickname;
         }
-        if (!Utility.eqOrNull(mStudentId, other.mStudentId)) {
+        if (!Objects.equals(mStudentId, other.mStudentId)) {
             changed = true;
             mStudentId = other.mStudentId;
         }
-        if (!Utility.eqOrNull(mEmail, other.mEmail)) {
+        if (!Objects.equals(mEmail, other.mEmail)) {
             changed = true;
             mEmail = other.mEmail;
         }
 
-        if (!Utility.eqOrNull(mSkillLevel, other.mSkillLevel)) {
+        if (!Objects.equals(mSkillLevel, other.mSkillLevel)) {
             changed = true;
             mSkillLevel = other.mSkillLevel;
         }
 
-        if (!Utility.eqOrNull(mStudentStatus, other.mStudentStatus)) {
+        if (!Objects.equals(mStudentStatus, other.mStudentStatus)) {
             changed = true;
             mStudentStatus = other.mStudentStatus;
         }
-        if (!Utility.eqOrNull(mPaymentStatus, other.mPaymentStatus)) {
+        if (!Objects.equals(mPaymentStatus, other.mPaymentStatus)) {
             changed = true;
             mPaymentStatus = other.mPaymentStatus;
         }

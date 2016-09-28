@@ -20,6 +20,7 @@ import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.Tuple;
 import nz.ac.squash.util.Utility;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.log4j.Logger;
 
 @Entity
@@ -224,7 +225,7 @@ public class Match {
 
     private static <T> void incCount(Map<T, Integer> map, T key) {
         Integer count = map.get(key);
-        count = Utility.firstNonNull(count, 0);
+        count = ObjectUtils.firstNonNull(count, 0);
         map.put(key, count + 1);
     }
 
@@ -353,17 +354,12 @@ public class Match {
                                     memberStatuses.get(player1),
                                     memberStatuses.get(player2));
 
-                            Integer player1MatchCount = Utility.firstNonNull(
-                                    todaysMatchCounts.get(player1), 0);
-                            Integer player2MatchCount = Utility.firstNonNull(
-                                    todaysMatchCounts.get(player2), 0);
-                            score.CombinedMatchCount = player1MatchCount +
-                                                       player2MatchCount;
-                            score.MinimumMatchCount = Math.min(
-                                    player1MatchCount, player2MatchCount);
+                            Integer player1MatchCount = ObjectUtils.firstNonNull(todaysMatchCounts.get(player1), 0);
+                            Integer player2MatchCount = ObjectUtils.firstNonNull(todaysMatchCounts.get(player2), 0);
+                            score.CombinedMatchCount = player1MatchCount + player2MatchCount;
+                            score.MinimumMatchCount = Math.min(player1MatchCount, player2MatchCount);
 
-                            score.TimesAlreadyPaired = Utility.firstNonNull(
-                                    todaysPairedMatchCounts.get(pairing), 0);
+                            score.TimesAlreadyPaired = ObjectUtils.firstNonNull(todaysPairedMatchCounts.get(pairing), 0);
 
                             score.IsRequested = satisfies;
                         }

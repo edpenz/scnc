@@ -46,6 +46,7 @@ import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 public class ImportWindow extends JDialog {
@@ -286,7 +287,7 @@ public class ImportWindow extends JDialog {
                             "Failed to download membership list", e);
                     return false;
                 } finally {
-                    Utility.safeClose(rbc, fos);
+                    IOUtils.closeQuietly(rbc, fos);
                 }
             }
 
