@@ -48,7 +48,6 @@ public class DB {
                                   sRunning.dQueuedFrom.toString());
                 } catch (Exception ex) {
                     sLogger.error("Transaction failed", ex);
-                    Utility.restart();
                 }
 
                 sRunning = null;

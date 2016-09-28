@@ -48,8 +48,6 @@ public class ClientWindow extends JFrame {
     private static final long serialVersionUID = 1L;
 
     public static void main(String[] args) {
-        Utility.seedRestart(ClientWindow.class, args);
-
         // Logging.
         Layout consoleLayout = new PatternLayout("[%t] %-5p %c %x - %m%n");
         Layout fileLayout = new PatternLayout(

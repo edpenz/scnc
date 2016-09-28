@@ -108,35 +108,4 @@ public class Utility {
             Thread.currentThread().interrupt();
         }
     }
-
-    private static Class<?> sEntryClass = null;
-    private static String[] sArgs = null;
-
-    public static void seedRestart(Class<?> entryClass, String[] args) {
-        sEntryClass = entryClass;
-        sArgs = args;
-    }
-
-    public static void restart() {
-        StringBuilder cmd = new StringBuilder();
-        cmd.append(System.getProperty("java.home") + File.separator + "bin" +
-                   File.separator + "java ");
-        for (String jvmArg : ManagementFactory.getRuntimeMXBean()
-                .getInputArguments()) {
-            cmd.append(jvmArg + " ");
-        }
-        cmd.append("-cp \"")
-                .append(ManagementFactory.getRuntimeMXBean().getClassPath())
-                .append("\" ");
-        cmd.append(sEntryClass.getName()).append(" ");
-        for (String arg : sArgs) {
-            cmd.append(arg).append(" ");
-        }
-        try {
-            Runtime.getRuntime().exec(cmd.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.exit(0);
-    }
 }
