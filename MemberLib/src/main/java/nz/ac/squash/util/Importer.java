@@ -1,27 +1,26 @@
 package nz.ac.squash.util;
 
+import nz.ac.squash.db.DB;
+import nz.ac.squash.db.DB.Transaction;
+import nz.ac.squash.db.beans.Member;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 
-import nz.ac.squash.db.DB;
-import nz.ac.squash.db.DB.Transaction;
-import nz.ac.squash.db.beans.Member;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
-
 public class Importer {
     private static final Logger sLogger = Logger.getLogger(Importer.class);
 
-    public static interface ImportAction {
-        public Member getMember();
+    public interface ImportAction {
+        Member getMember();
 
-        public String getDescription();
+        String getDescription();
 
-        public void apply();
+        void apply();
     }
 
     private static class ImportActionNewMember implements ImportAction {
@@ -37,8 +36,7 @@ public class Importer {
                 @Override
                 public void run() {
                     update(mMember);
-                    sLogger.info("Imported new member " +
-                                 mMember.getNameFormatted());
+                    sLogger.info("Imported new member " + mMember.getNameFormatted());
                 }
             });
         }
@@ -62,15 +60,12 @@ public class Importer {
         private String mNewNickname = null;
         private String mNewPaymentStatus = null;
 
-        public static ImportActionUpdate tryCreate(Member oldInfo,
-                Member newInfo) {
+        public static ImportActionUpdate tryCreate(Member oldInfo, Member newInfo) {
             ImportActionUpdate action = new ImportActionUpdate();
             action.mMember = oldInfo;
 
-            action.mNewActive = Utility.returnIfDifferent(oldInfo.isActive(),
-                    newInfo.isActive());
-            action.mNewName = Utility.returnIfDifferent(oldInfo.getName(),
-                    newInfo.getName());
+            action.mNewActive = Utility.returnIfDifferent(oldInfo.isActive(), newInfo.isActive());
+            action.mNewName = Utility.returnIfDifferent(oldInfo.getName(), newInfo.getName());
             if (!Objects.equals(oldInfo.getNickname(), newInfo.getNickname())) {
                 boolean oldBlank = StringUtils.isBlank(oldInfo.getNickname());
                 boolean newBlank = StringUtils.isBlank(newInfo.getNickname());
@@ -81,11 +76,12 @@ public class Importer {
                     action.mNewNickname = "";
                 }
             }
-            action.mNewPaymentStatus = Utility.returnIfDifferent(
-                    oldInfo.getPaymentStatus(), newInfo.getPaymentStatus());
+            action.mNewPaymentStatus = Utility.returnIfDifferent(oldInfo.getPaymentStatus(), newInfo.getPaymentStatus());
 
-            if (action.mNewActive != null || action.mNewName != null ||
-                action.mNewNickname != null || action.mNewPaymentStatus != null) {
+            if (action.mNewActive != null
+                    || action.mNewName != null
+                    || action.mNewNickname != null
+                    || action.mNewPaymentStatus != null) {
                 return action;
             } else {
                 return null;
@@ -100,8 +96,7 @@ public class Importer {
                     if (mNewActive != null) mMember.setActive(mNewActive);
                     if (mNewName != null) mMember.setName(mNewName);
                     if (mNewNickname != null) mMember.setNickname(mNewNickname);
-                    if (mNewPaymentStatus != null) mMember
-                            .setPaymentStatus(mNewPaymentStatus);
+                    if (mNewPaymentStatus != null) mMember.setPaymentStatus(mNewPaymentStatus);
 
                     update(mMember);
                     sLogger.info("Updated member " + mMember.getNameFormatted());
@@ -145,15 +140,13 @@ public class Importer {
             reader = new Scanner(file);
 
             // Parse each line.
-            while (true) {
+            while (reader.hasNextLine()) {
                 String[] lineParts = reader.nextLine().split(",");
                 final Member imported = new Member();
                 try {
-                    imported.setSignupTime(Utility.SPREADSHEET_FORMATTER
-                            .parse(lineParts[0]));
+                    imported.setSignupTime(Utility.SPREADSHEET_FORMATTER.parse(lineParts[0]));
                 } catch (ParseException e) {
-                    sLogger.warn("Invalid date/time: \"" + lineParts[0] +
-                                 "\", probably the CSV header");
+                    sLogger.warn("Invalid date/time: \"" + lineParts[0] + "\", probably the CSV header");
                     continue;
                 }
 
@@ -164,21 +157,17 @@ public class Importer {
                 imported.setStudentStatus(getOrNull(lineParts, 4));
                 imported.setStudentId(getOrNull(lineParts, 5));
 
-                imported.setSkillLevel(parseSkillLevel(getOrNull(lineParts, 6),
-                        getOrNull(lineParts, 7)));
+                imported.setSkillLevel(parseSkillLevel(getOrNull(lineParts, 6), getOrNull(lineParts, 7)));
 
                 imported.setActive(StringUtils.isEmpty(getOrNull(lineParts, 9)));
 
                 // Optional fields.
-                if (lineParts.length > 11) imported
-                        .setPaymentStatus(lineParts[11]);
+                if (lineParts.length > 11) imported.setPaymentStatus(lineParts[11]);
 
-                final Member existingMember = existingMembers.get(imported
-                        .getSignupTime());
+                final Member existingMember = existingMembers.get(imported.getSignupTime());
 
                 if (existingMember != null) {
-                    ImportActionUpdate action = ImportActionUpdate.tryCreate(
-                            existingMember, imported);
+                    ImportActionUpdate action = ImportActionUpdate.tryCreate(existingMember, imported);
                     if (action != null) actions.add(action);
                 } else if (imported.isActive()) {
                     actions.add(new ImportActionNewMember(imported));
@@ -205,20 +194,20 @@ public class Importer {
             char g = grade.toLowerCase().charAt(0);
 
             switch (g) {
-            case 'a':
-            case 'b':
-                return 1.f;
+                case 'a':
+                case 'b':
+                    return 1.f;
 
-            case 'c':
-                return 1.f + 1.f / 3.f;
-            case 'd':
-                return 1.f + 2.f / 3.f;
-            case 'e':
-                return 2.f;
-            case 'f':
-                return 2.f + 1.f / 3.f;
-            case 'j':
-                return 2.f + 2.f / 3.f;
+                case 'c':
+                    return 1.f + 1.f / 3.f;
+                case 'd':
+                    return 1.f + 2.f / 3.f;
+                case 'e':
+                    return 2.f;
+                case 'f':
+                    return 2.f + 1.f / 3.f;
+                case 'j':
+                    return 2.f + 2.f / 3.f;
             }
         } else if (StringUtils.isNotEmpty(level)) {
             return Float.parseFloat(level);
