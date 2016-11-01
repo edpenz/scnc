@@ -1,40 +1,5 @@
 package nz.ac.squash.windows;
 
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.util.Date;
-
-import javax.swing.AbstractAction;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.KeyStroke;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.pollerosoftware.log4j.additions.appenders.LazyFileAppender;
-
 import nz.ac.squash.panels.LadderPanel;
 import nz.ac.squash.panels.SchedulePanel;
 import nz.ac.squash.panels.SignInPanel;
@@ -43,6 +8,14 @@ import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.JBrandedPanel;
 import nz.ac.squash.widget.MatchPanel;
 import nz.ac.squash.widget.generic.JOverlay;
+import org.apache.log4j.*;
+import org.pollerosoftware.log4j.additions.appenders.LazyFileAppender;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.File;
+import java.util.Date;
 
 public class ClientWindow extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -50,8 +23,7 @@ public class ClientWindow extends JFrame {
     public static void main(String[] args) {
         // Logging.
         Layout consoleLayout = new PatternLayout("[%t] %-5p %c %x - %m%n");
-        Layout fileLayout = new PatternLayout(
-                "%d [%15.15t] %-5p %30.30c %x - %m%n");
+        Layout fileLayout = new PatternLayout("%d [%15.15t] %-5p %30.30c %x - %m%n");
 
         // To console.
         ConsoleAppender consoleAppender = new ConsoleAppender(consoleLayout);
@@ -64,9 +36,7 @@ public class ClientWindow extends JFrame {
         FileAppender fileAppender;
         fileAppender = new LazyFileAppender();
         fileAppender.setLayout(fileLayout);
-        fileAppender.setFile(
-                "logs/" + Utility.FILE_SAFE_FORMATTER.format(new Date()) +
-                             ".log");
+        fileAppender.setFile("logs/" + Utility.FILE_SAFE_FORMATTER.format(new Date()) + ".log");
         fileAppender.activateOptions();
         fileAppender.setThreshold(Level.INFO);
         BasicConfigurator.configure(fileAppender);
@@ -80,8 +50,7 @@ public class ClientWindow extends JFrame {
         System.setProperty("swing.aatext", "true");
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException
-                | IllegalAccessException | UnsupportedLookAndFeelException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             // Fallback to default look-and-feel is fine.
         }
 
@@ -105,8 +74,7 @@ public class ClientWindow extends JFrame {
                 StatsWindow.showDialog(ClientWindow.this);
             }
         });
-        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "stats");
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "stats");
 
         getRootPane().getActionMap().put("schedule", new AbstractAction() {
             @Override
@@ -116,8 +84,7 @@ public class ClientWindow extends JFrame {
                 }
             }
         });
-        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "schedule");
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0), "schedule");
 
         getRootPane().getActionMap().put("import", new AbstractAction() {
             @Override
@@ -125,13 +92,11 @@ public class ClientWindow extends JFrame {
                 ImportWindow.showDialog(ClientWindow.this);
             }
         });
-        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), "import");
+        getRootPane().getInputMap(JPanel.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), "import");
     }
 
     private void createContents() {
-        setIconImage(Toolkit.getDefaultToolkit()
-                .getImage(ClientWindow.class.getResource("/images/Icon.png")));
+        setIconImage(Toolkit.getDefaultToolkit().getImage(ClientWindow.class.getResource("/images/Icon.png")));
         JPanel panel_6 = new JBrandedPanel();
         setContentPane(panel_6);
         setGlassPane(new JOverlay());
@@ -150,11 +115,10 @@ public class ClientWindow extends JFrame {
         });
 
         GridBagLayout gridBagLayout_5 = new GridBagLayout();
-        gridBagLayout_5.columnWidths = new int[] { 0, 0 };
-        gridBagLayout_5.rowHeights = new int[] { 0, 0, 0 };
-        gridBagLayout_5.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
-        gridBagLayout_5.rowWeights = new double[] { 0.0, 1.0,
-                Double.MIN_VALUE };
+        gridBagLayout_5.columnWidths = new int[]{0, 0};
+        gridBagLayout_5.rowHeights = new int[]{0, 0, 0};
+        gridBagLayout_5.columnWeights = new double[]{1.0, Double.MIN_VALUE};
+        gridBagLayout_5.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout_5);
 
         JPanel panel_2 = new JPanel();
@@ -165,11 +129,10 @@ public class ClientWindow extends JFrame {
         gbc_panel_2.gridy = 0;
         getContentPane().add(panel_2, gbc_panel_2);
         GridBagLayout gbl_panel_2 = new GridBagLayout();
-        gbl_panel_2.columnWidths = new int[] { 0, 0, 0 };
-        gbl_panel_2.rowHeights = new int[] { 0, 0, 0, 0, 0 };
-        gbl_panel_2.columnWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
-        gbl_panel_2.rowWeights = new double[] { 0.0, 0.0, 1.0, 1.0,
-                Double.MIN_VALUE };
+        gbl_panel_2.columnWidths = new int[]{0, 0, 0};
+        gbl_panel_2.rowHeights = new int[]{0, 0, 0, 0, 0};
+        gbl_panel_2.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
+        gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
         panel_2.setLayout(gbl_panel_2);
 
         JLabel lblNewLabel_8 = new JLabel("ausc");

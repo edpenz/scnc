@@ -1,87 +1,117 @@
 package nz.ac.squash.panels;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
-import nz.ac.squash.db.DB;
-import nz.ac.squash.db.DB.Transaction;
-import nz.ac.squash.db.beans.Match;
-import nz.ac.squash.db.beans.MatchResult;
-import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.MatchPanel;
+import nz.ac.squash.widget.MatchTimer;
 import nz.ac.squash.widget.generic.VTextIcon;
 import nz.ac.squash.widget.generic.VerticalGridLayout;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SchedulePanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
-    private static final int[] COURTS = new int[] { 5, 6, 7, 8, 1, 2, 3, 4 };
-    private static final int SLOTS = 6;
+    private static final int[] COURTS = new int[]{5, 6, 7, 8, 1, 2, 3, 4};
+    private static final int SLOT_MIN = -2;
+    private static final int SLOT_MAX = 3;
 
     private MatchPanel[][] mMatchPanels;
+    private final List<List<MatchPanel>> mSlotGroups;
+    private final List<List<MatchPanel>> mCourtGroups;
     private JPanel mMatchGrid;
 
     public SchedulePanel() {
+        mSlotGroups = createSlotGroups();
+        mCourtGroups = createCourtGroups();
+
         createContents();
 
-        mMatchPanels = new MatchPanel[COURTS.length][SLOTS];
+        mMatchPanels = createMatchPanels(getSlotCount(), getCourtCount());
 
-        List<MatchPanel>[] courtGroups = (List<MatchPanel>[]) new List<?>[COURTS.length];
-        List<MatchPanel>[] slotGroups = (List<MatchPanel>[]) new List<?>[SLOTS];
+        checkForCollisions();
+    }
 
-        for (int i = 0; i < slotGroups.length; i++) {
-            slotGroups[i] = new ArrayList<>();
-        }
+    private List<List<MatchPanel>> createSlotGroups() {
+        return Stream
+                .generate(ArrayList<MatchPanel>::new)
+                .limit(getSlotCount())
+                .collect(Collectors.toList());
+    }
 
-        for (int i = 0; i < courtGroups.length; i++) {
-            courtGroups[i] = new ArrayList<>();
-        }
+    private List<List<MatchPanel>> createCourtGroups() {
+        return Stream
+                .generate(ArrayList<MatchPanel>::new)
+                .limit(getCourtCount())
+                .collect(Collectors.toList());
+    }
 
-        for (int c = 0; c < COURTS.length; c++) {
-            final int court = COURTS[c];
-            int startingSlot = findStartingSlot(court);
+    private MatchPanel[][] createMatchPanels(int slotCount, int courtCount) {
+        MatchPanel[][] panels = new MatchPanel[courtCount][slotCount];
 
-            for (int s = 0; s < SLOTS; s++) {
-                final int slot = s - 2;
+        for (int courtIndex = 0; courtIndex < courtCount; ++courtIndex) {
+            final int courtNumber = COURTS[courtIndex];
 
-                MatchPanel matchPanel = mMatchPanels[c][s] = new MatchPanel(
-                        court, slot, slot + startingSlot, courtGroups[c],
-                        slotGroups[s]);
+            for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+                final int slotOffset = SLOT_MIN + slotIndex;
+
+                List<MatchPanel> courtGroup = mCourtGroups.get(courtIndex);
+                List<MatchPanel> slotGroup = mSlotGroups.get(slotIndex);
+
+                MatchPanel matchPanel = new MatchPanel(courtNumber, slotOffset, slotOffset, courtGroup, slotGroup);
+
+                panels[courtIndex][slotIndex] = matchPanel;
+                courtGroup.add(matchPanel);
+                slotGroup.add(matchPanel);
 
                 mMatchGrid.add(matchPanel);
-                courtGroups[c].add(matchPanel);
-                slotGroups[s].add(matchPanel);
             }
         }
 
-        checkForCollisions();
+        return panels;
+    }
+
+    private int getCourtCount() {
+        return COURTS.length;
+    }
+
+    private int getSlotCount() {
+        return SLOT_MAX - SLOT_MIN + 1;
+    }
+
+    public Collection<MatchPanel> getMatchPanels() {
+        return new AbstractList<MatchPanel>() {
+            @Override
+            public MatchPanel get(int index) {
+                int slotIndex = index % getSlotCount();
+                int courtIndex = index / getSlotCount();
+
+                return mMatchPanels[courtIndex][slotIndex];
+            }
+
+            @Override
+            public int size() {
+                return getCourtCount() * getSlotCount();
+            }
+        };
+    }
+
+    private void checkForCollisions() {
+        getMatchPanels().forEach(MatchPanel::checkForCollisions);
     }
 
     private void createContents() {
         setOpaque(false);
         GridBagLayout gbl_schedulePanel = new GridBagLayout();
-        gbl_schedulePanel.columnWidths = new int[] { 96, 0, 0, 0, 0, 0, 0, 0,
-                0, 0 };
-        gbl_schedulePanel.rowHeights = new int[] { 0, 0, 116, 116, 116, 116,
-                116, 116, 0, 0 };
-        gbl_schedulePanel.columnWeights = new double[] { 0.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE };
-        gbl_schedulePanel.rowWeights = new double[] { 0.0, 0.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 0.0, Double.MIN_VALUE };
+        gbl_schedulePanel.columnWidths = new int[]{96, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        gbl_schedulePanel.rowHeights = new int[]{0, 0, 116, 116, 116, 116, 116, 116, 0, 0};
+        gbl_schedulePanel.columnWeights = new double[]{0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, Double.MIN_VALUE};
+        gbl_schedulePanel.rowWeights = new double[]{0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, Double.MIN_VALUE};
         setLayout(gbl_schedulePanel);
 
         JLabel lblNewLabel_6 = new JLabel("Upstairs");
@@ -178,8 +208,7 @@ public class SchedulePanel extends JPanel {
 
         JLabel rtdlblPastGames = new JLabel();
         rtdlblPastGames.setFont(new Font("Tahoma", Font.PLAIN, 18));
-        rtdlblPastGames.setIcon(new VTextIcon(rtdlblPastGames, "Previous",
-                VTextIcon.ROTATE_LEFT));
+        rtdlblPastGames.setIcon(new VTextIcon(rtdlblPastGames, "Previous", VTextIcon.ROTATE_LEFT));
         GridBagConstraints gbc_rtdlblPastGames = new GridBagConstraints();
         gbc_rtdlblPastGames.gridheight = 2;
         gbc_rtdlblPastGames.gridx = 0;
@@ -189,8 +218,7 @@ public class SchedulePanel extends JPanel {
         JLabel rtdlblNowPlaying = new JLabel();
         rtdlblNowPlaying.setForeground(Color.WHITE);
         rtdlblNowPlaying.setFont(new Font("Tahoma", Font.PLAIN, 18));
-        rtdlblNowPlaying.setIcon(new VTextIcon(rtdlblPastGames, "Playing",
-                VTextIcon.ROTATE_LEFT));
+        rtdlblNowPlaying.setIcon(new VTextIcon(rtdlblPastGames, "Playing", VTextIcon.ROTATE_LEFT));
         GridBagConstraints gbc_rtdlblNowPlaying = new GridBagConstraints();
         gbc_rtdlblNowPlaying.gridx = 0;
         gbc_rtdlblNowPlaying.gridy = 4;
@@ -198,8 +226,7 @@ public class SchedulePanel extends JPanel {
 
         JLabel rtdlblUpcomingGames = new JLabel();
         rtdlblUpcomingGames.setFont(new Font("Tahoma", Font.PLAIN, 18));
-        rtdlblUpcomingGames.setIcon(new VTextIcon(rtdlblPastGames, "Upcoming",
-                VTextIcon.ROTATE_LEFT));
+        rtdlblUpcomingGames.setIcon(new VTextIcon(rtdlblPastGames, "Upcoming", VTextIcon.ROTATE_LEFT));
         GridBagConstraints gbc_rtdlblUpcomingGames = new GridBagConstraints();
         gbc_rtdlblUpcomingGames.gridheight = 3;
         gbc_rtdlblUpcomingGames.gridx = 0;
@@ -217,63 +244,25 @@ public class SchedulePanel extends JPanel {
         add(mMatchGrid, gbc_mMatchGrid);
         mMatchGrid.setLayout(new VerticalGridLayout(0, 8, 0, 0));
 
-        JPanel panel_7 = new JPanel();
-        panel_7.setOpaque(false);
+        MatchTimer panel_7 = new MatchTimer(getMatchPanels());
         GridBagConstraints gbc_panel_7 = new GridBagConstraints();
         gbc_panel_7.insets = new Insets(5, 0, 0, 0);
         gbc_panel_7.fill = GridBagConstraints.BOTH;
         gbc_panel_7.gridx = 0;
         gbc_panel_7.gridy = 8;
-        add(panel_7, gbc_panel_7);
-        panel_7.setLayout(new GridLayout(1, 0, 0, 0));
+        add(panel_7.getPanel(), gbc_panel_7);
 
-        JButton button = new JButton("\u25BC");
-        button.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
-                previousSlot(-1);
-            }
-        });
-        button.setOpaque(false);
-        panel_7.add(button);
+        for (int courtIndex = 0; courtIndex < getCourtCount(); courtIndex++) {
+            List<MatchPanel> courtPanels = mCourtGroups.get(courtIndex);
 
-        JButton btnVvv = new JButton("\u25B2");
-        btnVvv.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                nextSlot(-1);
-            }
-        });
-        btnVvv.setOpaque(false);
-        panel_7.add(btnVvv);
-
-        for (int court = 0; court < 8; court++) {
-            final int courtF = court;
-
-            JPanel panel_8 = new JPanel();
-            panel_8.setOpaque(false);
+            MatchTimer panel_8 = new MatchTimer(courtPanels);
             GridBagConstraints gbc_panel_8 = new GridBagConstraints();
+            gbc_panel_8.insets = new Insets(5, 0, 0, 0);
+            gbc_panel_8.fill = GridBagConstraints.BOTH;
             gbc_panel_8.anchor = GridBagConstraints.SOUTH;
-            gbc_panel_8.gridx = 1 + courtF;
+            gbc_panel_8.gridx = 1 + courtIndex;
             gbc_panel_8.gridy = 8;
-            add(panel_8, gbc_panel_8);
-            panel_8.setLayout(new GridLayout(1, 0, 0, 0));
-
-            JButton button_1 = new JButton("\u25BE");
-            button_1.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) {
-                    previousSlot(courtF);
-                }
-            });
-            button_1.setOpaque(false);
-            panel_8.add(button_1);
-
-            JButton button_2 = new JButton("\u25B4");
-            button_2.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) {
-                    nextSlot(courtF);
-                }
-            });
-            button_2.setOpaque(false);
-            panel_8.add(button_2);
+            add(panel_8.getPanel(), gbc_panel_8);
         }
 
         JPanel panel_1 = new JPanel();
@@ -304,105 +293,5 @@ public class SchedulePanel extends JPanel {
         gbc_panel_3.gridx = 0;
         gbc_panel_3.gridy = 5;
         add(panel_3, gbc_panel_3);
-    }
-
-    private void nextSlot(int court) {
-        int start = court == -1 ? 0 : court;
-        int end = court == -1 ? mMatchPanels.length : court + 1;
-
-        for (int c = start; c < end; ++c) {
-            for (int slot = 0; slot < mMatchPanels[c].length; slot++) {
-                final MatchPanel matchPanel = mMatchPanels[c][slot];
-                matchPanel.nextSlot();
-            }
-        }
-
-        checkForCollisions();
-    }
-
-    private void previousSlot(int court) {
-        int start = court == -1 ? 0 : court;
-        int end = court == -1 ? mMatchPanels.length : court + 1;
-
-        for (int c = start; c < end; ++c) {
-            for (int slot = 0; slot < mMatchPanels[c].length; slot++) {
-                final MatchPanel matchPanel = mMatchPanels[c][slot];
-                matchPanel.previousSlot();
-            }
-        }
-
-        checkForCollisions();
-    }
-
-    private void checkForCollisions() {
-        for (int court = 0; court < 8; court++) {
-            for (int slot = 0; slot < 6; slot++) {
-                // TODO Actual range.
-                mMatchPanels[court][slot].checkForCollisions();
-            }
-        }
-    }
-
-    private static int findStartingSlot(final int court) {
-        final Date today = Utility.today();
-
-        return DB.executeTransaction(new Transaction<Integer>() {
-            @Override
-            public void run() {
-                int slot = 0;
-
-                // Start after every game that has finished.
-                MatchResult latestResult = Utility
-                        .first(query(
-                                MatchResult.class,
-                                "r where r.mMatch.mDate >= ?0 and r.mMatch.mCourt = ?1 order by r.mMatch.mTimeSlot desc",
-                                today, court));
-                if (latestResult != null) {
-                    slot = latestResult.getMatch().getTimeSlot() + 1;
-                }
-
-                // Start on first game without a result.
-                Match nextGame = Utility
-                        .first(query(
-                                Match.class,
-                                "m where m.mDate >= ?0 and m.mCourt = ?1 and m.mTimeSlot >= ?2 order by m.mTimeSlot asc",
-                                today, court, slot));
-                if (nextGame != null) {
-                    slot = nextGame.getTimeSlot();
-                }
-
-                setResult(slot);
-            }
-        });
-    }
-
-    public Iterable<MatchPanel> getMatchPanels() {
-        return new Iterable<MatchPanel>() {
-            @Override
-            public Iterator<MatchPanel> iterator() {
-                return new Iterator<MatchPanel>() {
-                    private int i = 0;
-
-                    @Override
-                    public void remove() {
-                        throw new RuntimeException("Iterable is read-only");
-                    }
-
-                    @Override
-                    public MatchPanel next() {
-                        final int court = i / SLOTS;
-                        final int slot = i % SLOTS;
-                        ++i;
-
-                        return mMatchPanels[court][slot];
-                    }
-
-                    @Override
-                    public boolean hasNext() {
-                        return i < COURTS.length * SLOTS;
-                    }
-                };
-            }
-        };
     }
 }
