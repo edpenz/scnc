@@ -176,7 +176,7 @@ public class MatchTimer {
         mPanel.add(mAutoButton, gbc);
         mUpButton = new JButton();
         mUpButton.setOpaque(false);
-        mUpButton.setText("▴");
+        mUpButton.setText("^");
         gbc = new GridBagConstraints();
         gbc.gridx = 2;
         gbc.gridy = 0;
@@ -185,7 +185,7 @@ public class MatchTimer {
         mPanel.add(mUpButton, gbc);
         mDownButton = new JButton();
         mDownButton.setOpaque(false);
-        mDownButton.setText("▾");
+        mDownButton.setText("v");
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 0;

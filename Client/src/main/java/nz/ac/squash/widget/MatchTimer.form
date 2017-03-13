@@ -29,7 +29,7 @@
         </constraints>
         <properties>
           <opaque value="false"/>
-          <text value="▴"/>
+          <text value="^"/>
         </properties>
       </component>
       <component id="57aa7" class="javax.swing.JButton" binding="mDownButton">
@@ -39,7 +39,7 @@
         </constraints>
         <properties>
           <opaque value="false"/>
-          <text value="▾"/>
+          <text value="v"/>
         </properties>
       </component>
     </children>
