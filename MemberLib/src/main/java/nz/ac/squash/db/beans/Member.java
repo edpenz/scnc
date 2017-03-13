@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -19,40 +20,37 @@ public class Member {
     @GeneratedValue
     private long mID;
 
-    private Date mSignupTime;
-    private boolean mActive = true;
+    private Timestamp mSignupTime;
 
-    // Identifying fields.
-    private String mName;
+    private String mFirstName;
+    private String mLastName;
     private String mNickname;
+
     private String mStudentId;
     private String mEmail;
 
-    // Info fields.
     private float mSkillLevel;
 
-    // Payment fields.
-    private String mStudentStatus;
-    private String mPaymentStatus;
+    private Float mAmountPaid;
 
     public long getID() {
         return mID;
     }
 
-    public boolean isActive() {
-        return mActive;
+    public String getFirstName() {
+        return mFirstName;
     }
 
-    public void setActive(boolean active) {
-        mActive = active;
+    public void setFirstName(String firstName) {
+        mFirstName = firstName;
     }
 
-    public String getName() {
-        return mName;
+    public String getLastName() {
+        return mLastName;
     }
 
-    public void setName(String name) {
-        mName = name;
+    public void setLastName(String lastName) {
+        mLastName = lastName;
     }
 
     public String getNickname() {
@@ -83,35 +81,27 @@ public class Member {
         return mSkillLevel;
     }
 
-    public void setSkillLevel(float skillLevel) {
-        mSkillLevel = skillLevel;
+    public void setSkillLevel(Float skillLevel) {
+        mSkillLevel = skillLevel != null ? skillLevel : 0f;
     }
 
-    public String getStudentStatus() {
-        return mStudentStatus;
+    public Float getAmountPaid() {
+        return mAmountPaid;
     }
 
-    public void setStudentStatus(String mStudentStatus) {
-        this.mStudentStatus = mStudentStatus;
-    }
-
-    public String getPaymentStatus() {
-        return mPaymentStatus;
-    }
-
-    public void setPaymentStatus(String paymentStatus) {
-        mPaymentStatus = paymentStatus;
+    public void setAmountPaid(Float amountPaid) {
+        mAmountPaid = amountPaid;
     }
 
     public boolean hasPaid() {
-        return StringUtils.isNotEmpty(mPaymentStatus);
+        return mAmountPaid != null;
     }
 
-    public Date getSignupTime() {
+    public Timestamp getSignupTime() {
         return mSignupTime;
     }
 
-    public void setSignupTime(Date mSignupTime) {
+    public void setSignupTime(Timestamp mSignupTime) {
         this.mSignupTime = mSignupTime;
     }
 
@@ -132,12 +122,16 @@ public class Member {
         return getNameFormatted();
     }
 
+    public String getNameRaw() {
+        return String.format("%s %s", mFirstName, mLastName).toLowerCase();
+    }
+
     public String getNameFormatted() {
-        return NameUtils.formatName(mName, mNickname);
+        return NameUtils.formatName(getNameRaw(), mNickname);
     }
 
     public String getNameFormattedLong() {
-        return NameUtils.formatNameLong(mName, mNickname);
+        return NameUtils.formatNameLong(getNameRaw(), mNickname);
     }
 
     private static String stripName(String input) {
@@ -192,7 +186,7 @@ public class Member {
                 DB.executeTransaction(new DB.Transaction<Void>() {
                     @Override
                     public void run() {
-                        for (Member member : query(Member.class, "m where m.mActive = true")) {
+                        for (Member member : listAll(Member.class)) {
                             members.put(member, Arrays.copyOf(baseMatch, baseMatch.length));
                         }
                     }
@@ -208,7 +202,7 @@ public class Member {
 
             // Build list of member ID tokens.
             memberTokens.clear();
-            Collections.addAll(memberTokens, StringUtils.split(stripName(member.mName)));
+            Collections.addAll(memberTokens, StringUtils.split(stripName(member.getNameRaw())));
             if (!StringUtils.isBlank(member.mNickname)) {
                 Collections.addAll(memberTokens, StringUtils.split(stripName(member.mNickname)));
             }
@@ -245,7 +239,7 @@ public class Member {
                 else if (delta > 0) return 1;
             }
 
-            return o1.getKey().getName().compareToIgnoreCase(o2.getKey().getName());
+            return o1.getKey().getNameRaw().compareToIgnoreCase(o2.getKey().getNameRaw());
         });
 
         MemberResults toReturn = new MemberResults();

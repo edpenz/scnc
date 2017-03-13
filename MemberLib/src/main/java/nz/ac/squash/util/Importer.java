@@ -1,19 +1,59 @@
 package nz.ac.squash.util;
 
+import com.google.gson.Gson;
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Member;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.sql.Timestamp;
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class Importer {
     private static final Logger sLogger = Logger.getLogger(Importer.class);
+
+    private static class Config {
+        public String DownloadUrl = "";
+
+        public int TimestampColumn = -1;
+        public int FirstNameColumn = -1;
+        public int LastNameColumn = -1;
+        public int NicknameColumn = -1;
+        public int StudentIdColumn = -1;
+        public int EmailColumn = -1;
+        public int SkillColumn = -1;
+        public int PaymentColumn = -1;
+
+        public static Config load(String path) {
+            try (FileReader reader = new FileReader(path)) {
+                return new Gson().fromJson(reader, Config.class);
+            } catch (FileNotFoundException e) {
+                sLogger.warn("No importer config found");
+            } catch (IOException e) {
+                sLogger.error("Failed to read config", e);
+            }
+
+            Config defaultConfig = new Config();
+            defaultConfig.save(path);
+            return defaultConfig;
+        }
+
+        public void save(String path) {
+            try (FileWriter writer = new FileWriter(path)) {
+                new Gson().toJson(this, writer);
+            } catch (IOException e) {
+                sLogger.error("Failed to write config", e);
+            }
+        }
+
+    }
 
     public interface ImportAction {
         Member getMember();
@@ -54,38 +94,22 @@ public class Importer {
 
     private static class ImportActionUpdate implements ImportAction {
         private Member mMember;
+        private Member mCopyFrom;
 
-        private Boolean mNewActive = null;
-        private String mNewName = null;
-        private String mNewNickname = null;
-        private String mNewPaymentStatus = null;
-
-        public static ImportActionUpdate tryCreate(Member oldInfo, Member newInfo) {
+        public static ImportActionUpdate tryCreate(Member member, Member newInfo) {
             ImportActionUpdate action = new ImportActionUpdate();
-            action.mMember = oldInfo;
+            action.mMember = member;
+            action.mCopyFrom = newInfo;
 
-            action.mNewActive = Utility.returnIfDifferent(oldInfo.isActive(), newInfo.isActive());
-            action.mNewName = Utility.returnIfDifferent(oldInfo.getName(), newInfo.getName());
-            if (!Objects.equals(oldInfo.getNickname(), newInfo.getNickname())) {
-                boolean oldBlank = StringUtils.isBlank(oldInfo.getNickname());
-                boolean newBlank = StringUtils.isBlank(newInfo.getNickname());
+            if (!areSame(member, newInfo, Member::getNameRaw)) return action;
+            if (!areSame(member, newInfo, Member::getNickname)) return action;
+            if (!areSame(member, newInfo, Member::getAmountPaid)) return action;
 
-                if (!newBlank) {
-                    action.mNewNickname = newInfo.getNickname();
-                } else if (newBlank && !oldBlank) {
-                    action.mNewNickname = "";
-                }
-            }
-            action.mNewPaymentStatus = Utility.returnIfDifferent(oldInfo.getPaymentStatus(), newInfo.getPaymentStatus());
+            if (!areSame(member, newInfo, Member::getSignupTime)) return action;
+            if (!areSame(member, newInfo, Member::getEmail)) return action;
+            if (!areSame(member, newInfo, Member::getStudentId)) return action;
 
-            if (action.mNewActive != null
-                    || action.mNewName != null
-                    || action.mNewNickname != null
-                    || action.mNewPaymentStatus != null) {
-                return action;
-            } else {
-                return null;
-            }
+            return null;
         }
 
         @Override
@@ -93,10 +117,14 @@ public class Importer {
             DB.queueTransaction(new Transaction<Void>() {
                 @Override
                 public void run() {
-                    if (mNewActive != null) mMember.setActive(mNewActive);
-                    if (mNewName != null) mMember.setName(mNewName);
-                    if (mNewNickname != null) mMember.setNickname(mNewNickname);
-                    if (mNewPaymentStatus != null) mMember.setPaymentStatus(mNewPaymentStatus);
+                    mMember.setFirstName(mCopyFrom.getFirstName());
+                    mMember.setLastName(mCopyFrom.getLastName());
+                    mMember.setNickname(mCopyFrom.getNickname());
+                    mMember.setAmountPaid(mCopyFrom.getAmountPaid());
+
+                    mMember.setSignupTime(mCopyFrom.getSignupTime());
+                    mMember.setEmail(mCopyFrom.getEmail());
+                    mMember.setStudentId(mCopyFrom.getStudentId());
 
                     update(mMember);
                     sLogger.info("Updated member " + mMember.getNameFormatted());
@@ -111,65 +139,61 @@ public class Importer {
 
         @Override
         public String getDescription() {
-            StringBuilder builder = new StringBuilder();
-
-            if (mNewActive != null) builder.append("Disabled, ");
-            if (mNewName != null) builder.append("Name changed, ");
-            if (mNewNickname != null) builder.append("Nickname changed, ");
-            if (mNewPaymentStatus != null) builder.append("Paid, ");
-
-            return builder.toString();
+            return String.format("Updated %s", mMember.getNameFormattedLong());
         }
     }
 
     public static List<ImportAction> generateImport(File file) {
         final List<ImportAction> actions = new ArrayList<>();
+        final Config config = Config.load(new File(file.getParent(), "config.json").getAbsolutePath());
 
-        final Map<Date, Member> existingMembers = new HashMap<>();
-        DB.executeTransaction(new Transaction<Void>() {
+        final List<Member> existingMembers = DB.executeTransaction(new Transaction<List<Member>>() {
             @Override
             public void run() {
-                for (Member member : listAll(Member.class)) {
-                    existingMembers.put(member.getSignupTime(), member);
-                }
+                setResult(listAll(Member.class));
             }
         });
 
-        Scanner reader = null;
-        try {
-            reader = new Scanner(file);
+        Supplier<Stream<Member>> otherMembers = () -> {
+            Stream<Member> existing = existingMembers.stream();
+            Stream<Member> added = actions.stream()
+                    .filter(ImportActionNewMember.class::isInstance)
+                    .map(ImportAction::getMember);
+
+            return Stream.concat(existing, added);
+        };
+
+        try (Scanner reader = new Scanner(file)) {
+            // TODO Validate configuration against column headers.
+            reader.nextLine();
 
             // Parse each line.
             while (reader.hasNextLine()) {
-                String[] lineParts = reader.nextLine().split(",");
-                final Member imported = new Member();
+                String line = reader.nextLine();
+                String[] lineParts = line.split("\t");
+                final Member imported;
                 try {
-                    imported.setSignupTime(Utility.SPREADSHEET_FORMATTER.parse(lineParts[0]));
+                    imported = parseMember(lineParts, config);
                 } catch (ParseException e) {
-                    sLogger.warn("Invalid date/time: \"" + lineParts[0] + "\", probably the CSV header");
+                    sLogger.warn(String.format("Skipping unparseable line \"%s\"", line));
                     continue;
                 }
 
-                imported.setName(getOrNull(lineParts, 1));
-                imported.setNickname(getOrNull(lineParts, 2));
-                imported.setEmail(getOrNull(lineParts, 3));
+                Optional<Member> duplicateOf = otherMembers.get()
+                        .filter(member -> {
+                            int similarity = 0;
+                            similarity += areSimilar(member, imported, Member::getSignupTime) ? 1 : 0;
+                            similarity += areSimilar(member, imported, Member::getNameRaw) ? 1 : 0;
+                            similarity += areSimilar(member, imported, Member::getEmail) ? 1 : 0;
+                            similarity += areSimilar(member, imported, Member::getStudentId) ? 1 : 0;
+                            return similarity >= 2;
+                        })
+                        .findFirst();
 
-                imported.setStudentStatus(getOrNull(lineParts, 4));
-                imported.setStudentId(getOrNull(lineParts, 5));
-
-                imported.setSkillLevel(parseSkillLevel(getOrNull(lineParts, 6), getOrNull(lineParts, 7)));
-
-                imported.setActive(StringUtils.isEmpty(getOrNull(lineParts, 9)));
-
-                // Optional fields.
-                if (lineParts.length > 11) imported.setPaymentStatus(lineParts[11]);
-
-                final Member existingMember = existingMembers.get(imported.getSignupTime());
-
-                if (existingMember != null) {
-                    ImportActionUpdate action = ImportActionUpdate.tryCreate(existingMember, imported);
+                if (duplicateOf.isPresent()) {
+                    ImportActionUpdate action = ImportActionUpdate.tryCreate(duplicateOf.get(), imported);
                     if (action != null) actions.add(action);
-                } else if (imported.isActive()) {
+                } else {
                     actions.add(new ImportActionNewMember(imported));
                 }
             }
@@ -177,42 +201,50 @@ public class Importer {
             sLogger.error("Import failed", ex);
             return null;
         } catch (NoSuchElementException e) {
-            IOUtils.closeQuietly(reader);
-        } finally {
-            IOUtils.closeQuietly(reader);
+            // Finished.
         }
 
         return actions;
     }
 
-    private static <T> T getOrNull(T[] array, int index) {
-        return index < array.length ? array[index] : null;
+    private static <T, K> boolean areSame(T a, T b, Function<T, K> keyAccessor) {
+        K aKey = keyAccessor.apply(a);
+        K bKey = keyAccessor.apply(b);
+        return Objects.equals(aKey, bKey);
     }
 
-    private static float parseSkillLevel(String level, String grade) {
-        if (StringUtils.isNotEmpty(grade)) {
-            char g = grade.toLowerCase().charAt(0);
+    private static <T, K> boolean areSimilar(T a, T b, Function<T, K> keyAccessor) {
+        K aKey = keyAccessor.apply(a);
+        K bKey = keyAccessor.apply(b);
+        return aKey != null && aKey.equals(bKey);
+    }
 
-            switch (g) {
-                case 'a':
-                case 'b':
-                    return 1.f;
+    private static Member parseMember(String[] lineParts, Config config) throws ParseException {
+        Member member = new Member();
+        member.setSignupTime(tryParseColumn(lineParts, config.TimestampColumn, s -> Timestamp.from(LocalDateTime.from(Utility.SPREADSHEET_FORMATTER.parse(s)).atZone(ZoneId.systemDefault()).toInstant())));
 
-                case 'c':
-                    return 1.f + 1.f / 3.f;
-                case 'd':
-                    return 1.f + 2.f / 3.f;
-                case 'e':
-                    return 2.f;
-                case 'f':
-                    return 2.f + 1.f / 3.f;
-                case 'j':
-                    return 2.f + 2.f / 3.f;
-            }
-        } else if (StringUtils.isNotEmpty(level)) {
-            return Float.parseFloat(level);
+        member.setFirstName(tryParseColumn(lineParts, config.FirstNameColumn));
+        member.setLastName(tryParseColumn(lineParts, config.LastNameColumn));
+        member.setNickname(tryParseColumn(lineParts, config.NicknameColumn));
+
+        member.setAmountPaid(tryParseColumn(lineParts, config.PaymentColumn, Float::parseFloat));
+        member.setSkillLevel(tryParseColumn(lineParts, config.SkillColumn, Float::parseFloat));
+
+        member.setEmail(tryParseColumn(lineParts, config.EmailColumn));
+        member.setStudentId(tryParseColumn(lineParts, config.StudentIdColumn));
+
+        return member;
+    }
+
+    private static String tryParseColumn(String[] columns, int column) {
+        return tryParseColumn(columns, column, s -> s);
+    }
+
+    private static <T> T tryParseColumn(String[] columns, int column, Function<String, T> parser) {
+        try {
+            return parser.apply(columns[column]);
+        } catch (Exception e) {
+            return null;
         }
-
-        return 2.5f;
     }
 }

@@ -1,14 +1,19 @@
 package nz.ac.squash.windows;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Window;
+import nz.ac.squash.db.DB;
+import nz.ac.squash.db.DB.Transaction;
+import nz.ac.squash.util.Importer;
+import nz.ac.squash.util.SwingUtils;
+import nz.ac.squash.util.Utility;
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+
+import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -22,32 +27,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
-
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.border.LineBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableModel;
-
-import nz.ac.squash.db.DB;
-import nz.ac.squash.db.DB.Transaction;
-import nz.ac.squash.util.Importer;
-import nz.ac.squash.util.SwingUtils;
-import nz.ac.squash.util.Utility;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
 
 public class ImportWindow extends JDialog {
     private static final File DOWNLOAD_CONFIG_FILE = new File("db/import.uri");
@@ -270,7 +249,7 @@ public class ImportWindow extends JDialog {
 
                 final String filename = "Google Docs membership at " +
                                         Utility.FILE_SAFE_FORMATTER
-                                                .format(new Date()) + ".csv";
+                                                .format(new Date()) + ".tsv";
 
                 URL website = null;
                 ReadableByteChannel rbc = null;
@@ -324,7 +303,7 @@ public class ImportWindow extends JDialog {
         DefaultListModel<File> model = new DefaultListModel<File>();
 
         for (File file : new File("db").listFiles()) {
-            if (file.isDirectory() || !file.getName().endsWith(".csv")) continue;
+            if (file.isDirectory() || !file.getName().endsWith(".tsv")) continue;
 
             model.addElement(file);
         }

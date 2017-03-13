@@ -1,40 +1,5 @@
 package nz.ac.squash.panels;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.concurrent.ExecutorService;
-
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
-import javax.swing.ListModel;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.MatchResult;
@@ -45,9 +10,13 @@ import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.windows.RegisterWindow;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.concurrent.ExecutorService;
 
 public class SignInPanel extends JLayeredPane {
     private static final long serialVersionUID = 1L;
@@ -89,12 +58,12 @@ public class SignInPanel extends JLayeredPane {
     private void createContents() {
         setOpaque(false);
         GridBagLayout gridBagLayout = new GridBagLayout();
-        gridBagLayout.columnWidths = new int[] { 0, 0, 700, 0, 0 };
-        gridBagLayout.rowHeights = new int[] { 0, 0, 300, 0, 0 };
-        gridBagLayout.columnWeights = new double[] { 1.0, 0.0, 1.0, 1.0,
-                Double.MIN_VALUE };
-        gridBagLayout.rowWeights = new double[] { 1.0, 0.0, 0.0, 1.0,
-                Double.MIN_VALUE };
+        gridBagLayout.columnWidths = new int[]{0, 0, 700, 0, 0};
+        gridBagLayout.rowHeights = new int[]{0, 0, 300, 0, 0};
+        gridBagLayout.columnWeights = new double[]{1.0, 0.0, 1.0, 1.0,
+                Double.MIN_VALUE};
+        gridBagLayout.rowWeights = new double[]{1.0, 0.0, 0.0, 1.0,
+                Double.MIN_VALUE};
         setLayout(gridBagLayout);
 
         mRegisterButton = new JLabel("Not found? Click here to register");
@@ -190,8 +159,8 @@ public class SignInPanel extends JLayeredPane {
         mResultList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list,
-                    Object value, int index, boolean isSelected,
-                    boolean cellHasFocus) {
+                                                          Object value, int index, boolean isSelected,
+                                                          boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(
                         list, value, index, isSelected, cellHasFocus);
                 label.setText(((Member) value).getNameFormattedLong());
@@ -211,12 +180,12 @@ public class SignInPanel extends JLayeredPane {
         gbc_mPlayerPanel.gridy = 2;
         add(mPlayerPanel, gbc_mPlayerPanel);
         GridBagLayout gbl_mPlayerPanel = new GridBagLayout();
-        gbl_mPlayerPanel.columnWidths = new int[] { 0, 0, 0, 0, 0, 0 };
-        gbl_mPlayerPanel.rowHeights = new int[] { 48, 0, 0, 0, 0, 0, 0 };
-        gbl_mPlayerPanel.columnWeights = new double[] { 0.0, 0.0, 1.0, 1.0,
-                0.0, Double.MIN_VALUE };
-        gbl_mPlayerPanel.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0,
-                1.0, Double.MIN_VALUE };
+        gbl_mPlayerPanel.columnWidths = new int[]{0, 0, 0, 0, 0, 0};
+        gbl_mPlayerPanel.rowHeights = new int[]{48, 0, 0, 0, 0, 0, 0};
+        gbl_mPlayerPanel.columnWeights = new double[]{0.0, 0.0, 1.0, 1.0,
+                0.0, Double.MIN_VALUE};
+        gbl_mPlayerPanel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0,
+                1.0, Double.MIN_VALUE};
         mPlayerPanel.setLayout(gbl_mPlayerPanel);
 
         lblNewLabel_1 = new JLabel("Advanced");
@@ -432,8 +401,7 @@ public class SignInPanel extends JLayeredPane {
             mSearchTask.execute(new Runnable() {
                 @Override
                 public void run() {
-                    final MemberResults results = Member.searchMembers(query,
-                            5, false);
+                    final MemberResults results = Member.searchMembers(query, 5, false);
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
@@ -451,8 +419,7 @@ public class SignInPanel extends JLayeredPane {
 
     private void showMemberPanel(Member member) {
         mSelectedMember = member;
-        final MemberStatus previousStatus = MemberStatus
-                .getPreviousStatus(member);
+        final MemberStatus previousStatus = MemberStatus.getPreviousStatus(member);
 
         final float skillLevel;
         if (previousStatus != null) skillLevel = previousStatus.getSkillLevel();
@@ -462,34 +429,24 @@ public class SignInPanel extends JLayeredPane {
         if (skill < 0) skill = 6;
         mSkillSlider.setValue(skill);
 
-        final boolean wantsGames = previousStatus != null &&
-                                   previousStatus.wantsGames();
+        final boolean wantsGames = previousStatus != null && previousStatus.wantsGames();
         mWantGamesRadio.setSelected(wantsGames);
         mWantTrainingRadio.setSelected(!wantsGames);
 
-        final boolean hasPaidFees = StringUtils.isNotBlank(member
-                .getPaymentStatus());
-        final int nightsAttended = SessionHelper.current()
-                .getPriorNightsAttended(member);
-        final int feeDollars = "UoA student".equalsIgnoreCase(member
-                .getStudentStatus()) ? 30 : 35;
+        final boolean hasPaidFees = member.hasPaid();
+        final int nightsAttended = SessionHelper.current().getPriorNightsAttended(member);
 
         if (hasPaidFees || nightsAttended == 0) {
             mFeesLabel.setText(" ");
         } else if (nightsAttended == 1) {
-            mFeesLabel.setText("Your membership fee ($" + feeDollars +
-                               ") is due today");
+            mFeesLabel.setText("Your membership fee is due today");
             mFeesLabel.setForeground(Color.GRAY);
         } else {
-            mFeesLabel.setText("Your membership fee ($" + feeDollars +
-                               ") is overdue");
+            mFeesLabel.setText("Your membership fee is overdue");
             mFeesLabel.setForeground(Color.RED);
         }
 
-        final boolean isSignedIn = previousStatus != null &&
-                                   Utility.today().before(
-                                           previousStatus.getDate()) &&
-                                   previousStatus.isPresent();
+        final boolean isSignedIn = previousStatus != null && Utility.today().before(previousStatus.getDate()) && previousStatus.isPresent();
         mSignInButton.setText(isSignedIn ? "Update" : "Sign-in");
         mSignOutButton.setEnabled(isSignedIn);
 

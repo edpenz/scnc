@@ -2,13 +2,14 @@ package nz.ac.squash.util;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Objects;
 
 public class Utility {
     public static final DateFormat FILE_SAFE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-    public static final DateFormat SPREADSHEET_FORMATTER = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    public static final DateTimeFormatter SPREADSHEET_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     public static final DateFormat DATE_ONLY_FORMATTER = new SimpleDateFormat("dd/MM/yyyy");
 
     public static <T> StackTraceElement getOuterTrace(Class<T> clazz) {

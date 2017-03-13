@@ -1,24 +1,16 @@
 package nz.ac.squash.reports;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.Utility;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class ReportNumberOfTurnups {
     private static class MemberStats {
@@ -59,7 +51,7 @@ public class ReportNumberOfTurnups {
         for (Entry<Member, Set<Date>> count : counts.entrySet()) {
             final Member member = count.getKey();
             final Set<Date> presentDates = count.getValue();
-            final boolean hasPaid = count.getKey().getPaymentStatus() != null;
+            final boolean hasPaid = count.getKey().hasPaid();
 
             stats.add(new MemberStats(member, presentDates, hasPaid));
         }

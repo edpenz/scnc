@@ -1,44 +1,22 @@
 package nz.ac.squash.windows;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Toolkit;
-import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Date;
-
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.beans.Member;
 import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.*;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Date;
 
 public class RegisterWindow extends JDialog {
     private static final long serialVersionUID = 1L;
@@ -48,10 +26,10 @@ public class RegisterWindow extends JDialog {
     }
 
     public static RegisterWindow showDialog(Component parent,
-            RegisterWindow.Callback callback) {
+                                            RegisterWindow.Callback callback) {
         final JFrame frame = parent instanceof JFrame ? (JFrame) parent
                 : (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class,
-                        parent);
+                parent);
 
         RegisterWindow window = new RegisterWindow(frame.getOwner());
         window.mCallback = callback;
@@ -111,11 +89,11 @@ public class RegisterWindow extends JDialog {
         getContentPane().setBackground(Color.WHITE);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         GridBagLayout gridBagLayout = new GridBagLayout();
-        gridBagLayout.columnWidths = new int[] { 0, 0, 0 };
-        gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0 };
-        gridBagLayout.columnWeights = new double[] { 1.0, 0.0, Double.MIN_VALUE };
-        gridBagLayout.rowWeights = new double[] { 0.0, 1.0, 0.0,
-                Double.MIN_VALUE };
+        gridBagLayout.columnWidths = new int[]{0, 0, 0};
+        gridBagLayout.rowHeights = new int[]{0, 0, 0, 0};
+        gridBagLayout.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
+        gridBagLayout.rowWeights = new double[]{0.0, 1.0, 0.0,
+                Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout);
 
         JLabel lblJoinTheClub = new JLabel("Join the club");
@@ -148,11 +126,11 @@ public class RegisterWindow extends JDialog {
         gbc_panel.gridy = 1;
         getContentPane().add(panel, gbc_panel);
         GridBagLayout gbl_panel = new GridBagLayout();
-        gbl_panel.columnWidths = new int[] { 71, 138, 138, 138, 0 };
-        gbl_panel.rowHeights = new int[] { 20, 20, 14, 0 };
-        gbl_panel.columnWeights = new double[] { 0.0, 1.0, 1.0, 1.0,
-                Double.MIN_VALUE };
-        gbl_panel.rowWeights = new double[] { 0.0, 0.0, 0.0, Double.MIN_VALUE };
+        gbl_panel.columnWidths = new int[]{71, 138, 138, 138, 0};
+        gbl_panel.rowHeights = new int[]{20, 20, 14, 0};
+        gbl_panel.columnWeights = new double[]{0.0, 1.0, 1.0, 1.0,
+                Double.MIN_VALUE};
+        gbl_panel.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
         panel.setLayout(gbl_panel);
 
         JLabel lblNewLabel = new JLabel("Full name");
@@ -231,9 +209,9 @@ public class RegisterWindow extends JDialog {
 
         mStatusCombo = new JComboBox();
         mStatusCombo.setFont(new Font("Tahoma", Font.PLAIN, 14));
-        mStatusCombo.setModel(new DefaultComboBoxModel(new String[] {
+        mStatusCombo.setModel(new DefaultComboBoxModel(new String[]{
                 "UoA student", "UoA alumni", "UoA staff", "Other student",
-                "Not a student" }));
+                "Not a student"}));
         mStatusCombo.setOpaque(false);
         GridBagConstraints gbc_mStatusCombo = new GridBagConstraints();
         gbc_mStatusCombo.insets = new Insets(0, 0, 0, 5);
@@ -321,14 +299,12 @@ public class RegisterWindow extends JDialog {
 
         // Create new member object filled with form data.
         final Member proto = new Member();
-        proto.setSignupTime(Utility.stripMillis(new Date()));
-        proto.setActive(true);
+        proto.setSignupTime(Timestamp.from(Instant.now()));
 
-        proto.setName(mNameField.getText());
+        //proto.setName(mNameField.getText());
         proto.setNickname(mNicknameField.getText());
         proto.setEmail(mEmailField.getText());
 
-        proto.setStudentStatus(mStatusCombo.getSelectedItem().toString());
         proto.setStudentId(mStudentIdField.getText());
 
         // Save to database.
@@ -352,14 +328,11 @@ public class RegisterWindow extends JDialog {
             fos = new FileWriter(mExportFile, true);
             PrintWriter writer = new PrintWriter(new BufferedWriter(fos));
 
-            writer.print(Utility.SPREADSHEET_FORMATTER.format(proto
-                    .getSignupTime()) + ",");
-            writer.print(proto.getName() + ",");
-            writer.print(proto.getNickname() != null ? proto.getNickname() +
-                                                       "," : ",");
+            writer.print(Utility.SPREADSHEET_FORMATTER.format(proto.getSignupTime().toInstant()) + ",");
+            //writer.print(proto.getName() + ",");
+            writer.print(proto.getNickname() != null ? proto.getNickname() + "," : ",");
             writer.print(proto.getEmail() + ",");
 
-            writer.print(proto.getStudentStatus() + ",");
             writer.print(proto.getStudentId() + ",");
 
             writer.print("" + ",");
