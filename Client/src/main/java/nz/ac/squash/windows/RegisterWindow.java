@@ -1,7 +1,7 @@
 package nz.ac.squash.windows;
 
-import nz.ac.squash.db.DB;
 import nz.ac.squash.db.beans.Member;
+import nz.ac.squash.util.Importer;
 import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
 import org.apache.commons.io.IOUtils;
@@ -16,7 +16,10 @@ import java.awt.event.WindowEvent;
 import java.io.*;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class RegisterWindow extends JDialog {
     private static final long serialVersionUID = 1L;
@@ -46,7 +49,8 @@ public class RegisterWindow extends JDialog {
         return window;
     }
 
-    private JTextField mNameField;
+    private JTextField mFirstNameField;
+    private JTextField mLastNameField;
     private JTextField mEmailField;
     private JTextField mStudentIdField;
 
@@ -63,10 +67,9 @@ public class RegisterWindow extends JDialog {
     private RegisterWindow.Callback mCallback = null;
 
     private static File mExportFile = null;
+    private JLabel lblLastName;
     private JLabel mStudentIdLabel;
     private JComboBox mStatusCombo;
-    private JLabel lblPreferredName;
-    private JTextField mNicknameField;
 
     private RegisterWindow(Window window) {
         super(window, ModalityType.APPLICATION_MODAL);
@@ -82,9 +85,7 @@ public class RegisterWindow extends JDialog {
     private void createContents() {
         setIconImage(Toolkit
                 .getDefaultToolkit()
-                .getImage(
-                        RegisterWindow.class
-                                .getResource("/javax/swing/plaf/metal/icons/ocean/menu.gif")));
+                .getImage(RegisterWindow.class.getResource("/javax/swing/plaf/metal/icons/ocean/menu.gif")));
 
         getContentPane().setBackground(Color.WHITE);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -92,8 +93,7 @@ public class RegisterWindow extends JDialog {
         gridBagLayout.columnWidths = new int[]{0, 0, 0};
         gridBagLayout.rowHeights = new int[]{0, 0, 0, 0};
         gridBagLayout.columnWeights = new double[]{1.0, 0.0, Double.MIN_VALUE};
-        gridBagLayout.rowWeights = new double[]{0.0, 1.0, 0.0,
-                Double.MIN_VALUE};
+        gridBagLayout.rowWeights = new double[]{0.0, 1.0, 0.0, Double.MIN_VALUE};
         getContentPane().setLayout(gridBagLayout);
 
         JLabel lblJoinTheClub = new JLabel("Join the club");
@@ -107,7 +107,7 @@ public class RegisterWindow extends JDialog {
         getContentPane().add(lblJoinTheClub, gbc_lblJoinTheClub);
 
         JPanel panel1 = new JPanel();
-        panel1.setBackground(Color.decode("#0065B3"));
+        panel1.setBackground(Color.decode("#535353"));
         GridBagConstraints gbc_panel1 = new GridBagConstraints();
         gbc_panel1.gridwidth = 2;
         gbc_panel1.fill = GridBagConstraints.BOTH;
@@ -126,14 +126,13 @@ public class RegisterWindow extends JDialog {
         gbc_panel.gridy = 1;
         getContentPane().add(panel, gbc_panel);
         GridBagLayout gbl_panel = new GridBagLayout();
-        gbl_panel.columnWidths = new int[]{71, 138, 138, 138, 0};
+        gbl_panel.columnWidths = new int[]{71, 160, 125, 160, 0};
         gbl_panel.rowHeights = new int[]{20, 20, 14, 0};
-        gbl_panel.columnWeights = new double[]{0.0, 1.0, 1.0, 1.0,
-                Double.MIN_VALUE};
+        gbl_panel.columnWeights = new double[]{0.0, 1.0, 0.0, 1.0,Double.MIN_VALUE};
         gbl_panel.rowWeights = new double[]{0.0, 0.0, 0.0, Double.MIN_VALUE};
         panel.setLayout(gbl_panel);
 
-        JLabel lblNewLabel = new JLabel("Full name");
+        JLabel lblNewLabel = new JLabel("First name");
         lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 18));
         GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
         gbc_lblNewLabel.anchor = GridBagConstraints.WEST;
@@ -142,36 +141,34 @@ public class RegisterWindow extends JDialog {
         gbc_lblNewLabel.gridy = 0;
         panel.add(lblNewLabel, gbc_lblNewLabel);
 
-        mNameField = new JTextField();
-        mNameField.setFont(new Font("Tahoma", Font.PLAIN, 18));
-        mNameField.setOpaque(false);
+        mFirstNameField = new JTextField();
+        mFirstNameField.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        mFirstNameField.setOpaque(false);
         GridBagConstraints gbc_mNameField = new GridBagConstraints();
         gbc_mNameField.fill = GridBagConstraints.HORIZONTAL;
         gbc_mNameField.insets = new Insets(0, 0, 5, 5);
         gbc_mNameField.gridx = 1;
         gbc_mNameField.gridy = 0;
-        panel.add(mNameField, gbc_mNameField);
-        mNameField.setColumns(20);
+        panel.add(mFirstNameField, gbc_mNameField);
 
-        lblPreferredName = new JLabel("Preferred name");
-        lblPreferredName.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        lblLastName = new JLabel("Last name");
+        lblLastName.setFont(new Font("Tahoma", Font.PLAIN, 18));
         GridBagConstraints gbc_lblPreferredName = new GridBagConstraints();
         gbc_lblPreferredName.anchor = GridBagConstraints.EAST;
         gbc_lblPreferredName.insets = new Insets(0, 0, 5, 5);
         gbc_lblPreferredName.gridx = 2;
         gbc_lblPreferredName.gridy = 0;
-        panel.add(lblPreferredName, gbc_lblPreferredName);
+        panel.add(lblLastName, gbc_lblPreferredName);
 
-        mNicknameField = new JTextField();
-        mNicknameField.setOpaque(false);
-        mNicknameField.setFont(new Font("Tahoma", Font.PLAIN, 18));
-        mNicknameField.setColumns(10);
+        mLastNameField = new JTextField();
+        mLastNameField.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        mLastNameField.setOpaque(false);
         GridBagConstraints gbc_mNicknameField = new GridBagConstraints();
-        gbc_mNicknameField.insets = new Insets(0, 0, 5, 0);
         gbc_mNicknameField.fill = GridBagConstraints.HORIZONTAL;
+        gbc_mNicknameField.insets = new Insets(0, 0, 5, 0);
         gbc_mNicknameField.gridx = 3;
         gbc_mNicknameField.gridy = 0;
-        panel.add(mNicknameField, gbc_mNicknameField);
+        panel.add(mLastNameField, gbc_mNicknameField);
 
         JLabel lblNewLabel_1 = new JLabel("Email address");
         lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 18));
@@ -192,7 +189,6 @@ public class RegisterWindow extends JDialog {
         gbc_mEmailField.gridx = 1;
         gbc_mEmailField.gridy = 1;
         panel.add(mEmailField, gbc_mEmailField);
-        mEmailField.setColumns(10);
 
         mSkillRadioGroup = new ButtonGroup();
 
@@ -209,9 +205,7 @@ public class RegisterWindow extends JDialog {
 
         mStatusCombo = new JComboBox();
         mStatusCombo.setFont(new Font("Tahoma", Font.PLAIN, 14));
-        mStatusCombo.setModel(new DefaultComboBoxModel(new String[]{
-                "UoA student", "UoA alumni", "UoA staff", "Other student",
-                "Not a student"}));
+        mStatusCombo.setModel(new DefaultComboBoxModel<>(new String[]{"UoA student", "UoA graduate", "UoA staff", "Other student", "Not a student"}));
         mStatusCombo.setOpaque(false);
         GridBagConstraints gbc_mStatusCombo = new GridBagConstraints();
         gbc_mStatusCombo.insets = new Insets(0, 0, 0, 5);
@@ -231,12 +225,12 @@ public class RegisterWindow extends JDialog {
 
         mStudentIdField = new JTextField();
         mStudentIdField.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        mStudentIdField.setOpaque(false);
         GridBagConstraints gbc_mStudentIdField = new GridBagConstraints();
-        gbc_mStudentIdField.anchor = GridBagConstraints.WEST;
+        gbc_mStudentIdField.fill = GridBagConstraints.HORIZONTAL;
         gbc_mStudentIdField.gridx = 3;
         gbc_mStudentIdField.gridy = 2;
         panel.add(mStudentIdField, gbc_mStudentIdField);
-        mStudentIdField.setColumns(10);
 
         mPaymentRadioGroup = new ButtonGroup();
 
@@ -287,7 +281,7 @@ public class RegisterWindow extends JDialog {
 
     private void doRegistration() {
         // Do validation.
-        if (StringUtils.isBlank(mNameField.getText())) {
+        if (StringUtils.isBlank(mFirstNameField.getText()) || StringUtils.isBlank(mLastNameField.getText())) {
             validationError("Please enter your name");
             return;
         }
@@ -298,48 +292,50 @@ public class RegisterWindow extends JDialog {
         }
 
         // Create new member object filled with form data.
-        final Member proto = new Member();
-        proto.setSignupTime(Timestamp.from(Instant.now()));
+        Member newMember = new Member();
+        newMember.setSignupTime(Timestamp.from(Instant.now()));
 
-        //proto.setName(mNameField.getText());
-        proto.setNickname(mNicknameField.getText());
-        proto.setEmail(mEmailField.getText());
+        newMember.setFirstName(mFirstNameField.getText());
+        newMember.setLastName(mLastNameField.getText());
 
-        proto.setStudentId(mStudentIdField.getText());
+        newMember.setEmail(mEmailField.getText());
+        newMember.setStudentId(mStudentIdField.getText());
 
         // Save to database.
-        DB.executeTransaction(new DB.Transaction<Void>() {
-            @Override
-            public void run() {
-                update(proto);
-            }
-        });
+        for (Importer.ImportAction importAction : Importer.generateImport(Arrays.asList(newMember))) {
+            importAction.apply();
+            newMember = importAction.getMember();
+        }
 
         // Export to CSV.
         if (mExportFile == null) {
-            mExportFile = new File(
-                    "logs/Submissions from " +
-                            Utility.FILE_SAFE_FORMATTER.format(new Date()) +
-                            ".csv");
+            mExportFile = new File("logs/Submissions from " + Utility.FILE_SAFE_FORMATTER.format(new Date()) + ".tsv");
         }
+
+        Importer.Config config = Importer.Config.load("db/config.json");
+
+        List<String> columns = new ArrayList<>();
+        setColumn(columns, config.TimestampColumn, Utility.SPREADSHEET_FORMATTER.format(newMember.getSignupTime().toLocalDateTime()));
+
+        setColumn(columns, config.FirstNameColumn, newMember.getFirstName());
+        setColumn(columns, config.LastNameColumn, newMember.getLastName());
+
+        setColumn(columns, config.EmailColumn, newMember.getEmail());
+        setColumn(columns, config.StudentIdColumn, newMember.getStudentId());
+
+        // TODO Don't hard-code.
+        setColumn(columns, 5, mStatusCombo.getSelectedItem().toString());
+        setColumn(columns, 11, "Club night PC");
 
         FileWriter fos = null;
         try {
             fos = new FileWriter(mExportFile, true);
             PrintWriter writer = new PrintWriter(new BufferedWriter(fos));
 
-            writer.print(Utility.SPREADSHEET_FORMATTER.format(proto.getSignupTime().toInstant()) + ",");
-            //writer.print(proto.getName() + ",");
-            writer.print(proto.getNickname() != null ? proto.getNickname() + "," : ",");
-            writer.print(proto.getEmail() + ",");
-
-            writer.print(proto.getStudentId() + ",");
-
-            writer.print("" + ",");
-
-            writer.print("" + ",");
-            writer.print("Club night PC" + ",");
-
+            for (String column : columns) {
+                writer.print(column);
+                writer.print("\t");
+            }
             writer.print("\r\n");
             writer.flush();
 
@@ -353,8 +349,16 @@ public class RegisterWindow extends JDialog {
         doClose();
 
         if (mCallback != null) {
-            mCallback.memberRegistered(proto);
+            mCallback.memberRegistered(newMember);
         }
+    }
+
+    private static void setColumn(List<String> columns, int index, String value) {
+        while (columns.size() < index + 1) {
+            columns.add("");
+        }
+
+        columns.set(index, value != null ? value : "");
     }
 
     private void doClose() {

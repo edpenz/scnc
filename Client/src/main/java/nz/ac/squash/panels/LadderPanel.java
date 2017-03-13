@@ -1,27 +1,5 @@
 package nz.ac.squash.panels;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultListModel;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.ListModel;
-import javax.swing.SwingUtilities;
-
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.MatchResult;
@@ -31,6 +9,14 @@ import nz.ac.squash.util.LatestExecutor;
 import nz.ac.squash.util.Utility;
 import nz.ac.squash.widget.LadderEntry;
 import nz.ac.squash.widget.generic.VerticalGridLayout;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public class LadderPanel extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -85,7 +71,7 @@ public class LadderPanel extends JPanel {
         gbc_mLadderPanel.gridy = 2;
 
         mLadderGrid = new JPanel();
-        mLadderGrid.setBackground(Color.decode("#0065B3"));
+        mLadderGrid.setBackground(Color.decode("#535353"));
         GridBagConstraints gbc_mLadderGrid = new GridBagConstraints();
         gbc_mLadderGrid.fill = GridBagConstraints.BOTH;
         gbc_mLadderGrid.gridx = 0;

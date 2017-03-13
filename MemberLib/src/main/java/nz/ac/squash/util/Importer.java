@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Member;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 import java.io.*;
@@ -13,13 +14,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class Importer {
     private static final Logger sLogger = Logger.getLogger(Importer.class);
 
-    private static class Config {
+    public static class Config {
         public String DownloadUrl = "";
 
         public int TimestampColumn = -1;
@@ -144,8 +146,39 @@ public class Importer {
     }
 
     public static List<ImportAction> generateImport(File file) {
-        final List<ImportAction> actions = new ArrayList<>();
         final Config config = Config.load(new File(file.getParent(), "config.json").getAbsolutePath());
+
+        List<Member> pendingMembers = new ArrayList<>();
+
+        try (Scanner reader = new Scanner(file)) {
+            // TODO Validate configuration against column headers.
+            reader.nextLine();
+
+            // Parse each line.
+            while (reader.hasNextLine()) {
+                String line = reader.nextLine();
+                String[] lineParts = line.split("\t");
+                final Member imported;
+                try {
+                    pendingMembers.add(parseMember(lineParts, config));
+                } catch (ParseException e) {
+                    sLogger.warn(String.format("Skipping unparseable line \"%s\"", line));
+                    continue;
+                }
+
+            }
+        } catch (IOException ex) {
+            sLogger.error("Import failed", ex);
+            return null;
+        } catch (NoSuchElementException e) {
+            // Finished.
+        }
+
+        return generateImport(pendingMembers);
+    }
+
+    public static List<ImportAction> generateImport(List<Member> pendingMembers) {
+        final List<ImportAction> actions = new ArrayList<>();
 
         final List<Member> existingMembers = DB.executeTransaction(new Transaction<List<Member>>() {
             @Override
@@ -163,45 +196,24 @@ public class Importer {
             return Stream.concat(existing, added);
         };
 
-        try (Scanner reader = new Scanner(file)) {
-            // TODO Validate configuration against column headers.
-            reader.nextLine();
+        for (Member pendingMember : pendingMembers) {
+            Optional<Member> existingMember = otherMembers.get()
+                    .filter(otherMember -> {
+                        int similarity = 0;
+                        similarity += areSimilar(pendingMember, otherMember, Member::getSignupTime, Objects::isNull) ? 1 : 0;
+                        similarity += areSimilar(pendingMember, otherMember, Member::getNameRaw, StringUtils::isBlank) ? 1 : 0;
+                        similarity += areSimilar(pendingMember, otherMember, Member::getEmail, StringUtils::isBlank) ? 2 : 0;
+                        similarity += areSimilar(pendingMember, otherMember, Member::getStudentId, StringUtils::isBlank) ? 2 : 0;
+                        return similarity >= 2;
+                    })
+                    .findFirst();
 
-            // Parse each line.
-            while (reader.hasNextLine()) {
-                String line = reader.nextLine();
-                String[] lineParts = line.split("\t");
-                final Member imported;
-                try {
-                    imported = parseMember(lineParts, config);
-                } catch (ParseException e) {
-                    sLogger.warn(String.format("Skipping unparseable line \"%s\"", line));
-                    continue;
-                }
-
-                Optional<Member> duplicateOf = otherMembers.get()
-                        .filter(member -> {
-                            int similarity = 0;
-                            similarity += areSimilar(member, imported, Member::getSignupTime) ? 1 : 0;
-                            similarity += areSimilar(member, imported, Member::getNameRaw) ? 1 : 0;
-                            similarity += areSimilar(member, imported, Member::getEmail) ? 1 : 0;
-                            similarity += areSimilar(member, imported, Member::getStudentId) ? 1 : 0;
-                            return similarity >= 2;
-                        })
-                        .findFirst();
-
-                if (duplicateOf.isPresent()) {
-                    ImportActionUpdate action = ImportActionUpdate.tryCreate(duplicateOf.get(), imported);
-                    if (action != null) actions.add(action);
-                } else {
-                    actions.add(new ImportActionNewMember(imported));
-                }
+            if (existingMember.isPresent()) {
+                ImportActionUpdate action = ImportActionUpdate.tryCreate(existingMember.get(), pendingMember);
+                if (action != null) actions.add(action);
+            } else {
+                actions.add(new ImportActionNewMember(pendingMember));
             }
-        } catch (IOException ex) {
-            sLogger.error("Import failed", ex);
-            return null;
-        } catch (NoSuchElementException e) {
-            // Finished.
         }
 
         return actions;
@@ -213,10 +225,10 @@ public class Importer {
         return Objects.equals(aKey, bKey);
     }
 
-    private static <T, K> boolean areSimilar(T a, T b, Function<T, K> keyAccessor) {
+    private static <T, K> boolean areSimilar(T a, T b, Function<T, K> keyAccessor, Predicate<K> ignore) {
         K aKey = keyAccessor.apply(a);
         K bKey = keyAccessor.apply(b);
-        return aKey != null && aKey.equals(bKey);
+        return !ignore.test(aKey) && aKey.equals(bKey);
     }
 
     private static Member parseMember(String[] lineParts, Config config) throws ParseException {

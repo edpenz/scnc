@@ -276,7 +276,7 @@ public class SchedulePanel extends JPanel {
         add(panel_1, gbc_panel_1);
 
         JPanel panel = new JPanel();
-        panel.setBackground(Color.decode("#74B2E3"));
+        panel.setBackground(Color.decode("#eca5a4"));
         GridBagConstraints gbc_panel = new GridBagConstraints();
         gbc_panel.gridwidth = 9;
         gbc_panel.fill = GridBagConstraints.BOTH;

@@ -1,43 +1,5 @@
 package nz.ac.squash.windows;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Toolkit;
-import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
-
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
 import nz.ac.squash.db.beans.Match;
@@ -46,6 +8,19 @@ import nz.ac.squash.db.beans.MemberStatus;
 import nz.ac.squash.util.SessionHelper;
 import nz.ac.squash.util.SwingUtils;
 import nz.ac.squash.util.Utility;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.*;
+import java.util.List;
+import java.util.Map.Entry;
 
 public class StatsWindow extends JDialog {
     private static final long serialVersionUID = 1L;
@@ -100,7 +75,7 @@ public class StatsWindow extends JDialog {
         JLabel lblStatistics = new JLabel("Statistics");
         lblStatistics.setHorizontalAlignment(SwingConstants.CENTER);
         lblStatistics.setOpaque(true);
-        lblStatistics.setBackground(new Color(0, 101, 179));
+        lblStatistics.setBackground(Color.decode("#535353"));
         lblStatistics.setForeground(Color.WHITE);
         lblStatistics.setFont(new Font("Tahoma", Font.PLAIN, 32));
         GridBagConstraints gbc_lblStatistics = new GridBagConstraints();

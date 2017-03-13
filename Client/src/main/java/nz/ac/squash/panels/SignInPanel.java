@@ -74,7 +74,7 @@ public class SignInPanel extends JLayeredPane {
             }
         });
         mRegisterButton.setForeground(Color.WHITE);
-        mRegisterButton.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        mRegisterButton.setFont(new Font("Tahoma", Font.PLAIN, 26));
         setLayer(mRegisterButton, 0);
         mRegisterButton.setCursor(Cursor
                 .getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -110,9 +110,9 @@ public class SignInPanel extends JLayeredPane {
         mSearchHintLabel.setFont(new Font("Tahoma", Font.PLAIN, 28));
 
         mSearchField = new JTextField();
-        mSearchField.addFocusListener(new FocusAdapter() {
+        mSearchField.addMouseListener(new MouseAdapter() {
             @Override
-            public void focusGained(FocusEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 hideMemberPanel();
             }
         });

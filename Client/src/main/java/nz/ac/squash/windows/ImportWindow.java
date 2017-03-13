@@ -90,7 +90,7 @@ public class ImportWindow extends JDialog {
         JLabel lblNewLabel = new JLabel("Import Members");
         lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
         lblNewLabel.setOpaque(true);
-        lblNewLabel.setBackground(new Color(0, 101, 179));
+        lblNewLabel.setBackground(Color.decode("#535353"));
         lblNewLabel.setForeground(Color.WHITE);
         lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 32));
         GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();

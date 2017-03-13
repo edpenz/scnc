@@ -11,10 +11,12 @@ import nz.ac.squash.widget.generic.JOverlay;
 import org.apache.log4j.*;
 import org.pollerosoftware.log4j.additions.appenders.LazyFileAppender;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 
 public class ClientWindow extends JFrame {
@@ -103,7 +105,7 @@ public class ClientWindow extends JFrame {
 
         setSize(new Dimension(1280, 800));
         setLocation(0, 0);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setTitle("AUSC Scheduler");
         setResizable(false);
         setUndecorated(true);
@@ -135,31 +137,23 @@ public class ClientWindow extends JFrame {
         gbl_panel_2.rowWeights = new double[]{0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
         panel_2.setLayout(gbl_panel_2);
 
-        JLabel lblNewLabel_8 = new JLabel("ausc");
-        lblNewLabel_8.setFont(new Font("Tahoma", Font.PLAIN, 64));
-        lblNewLabel_8.setForeground(Color.WHITE);
-        GridBagConstraints gbc_lblNewLabel_8 = new GridBagConstraints();
-        gbc_lblNewLabel_8.insets = new Insets(-28, 0, 0, 0);
-        gbc_lblNewLabel_8.gridwidth = 2;
-        gbc_lblNewLabel_8.anchor = GridBagConstraints.NORTHWEST;
-        gbc_lblNewLabel_8.gridx = 0;
-        gbc_lblNewLabel_8.gridy = 0;
-        panel_2.add(lblNewLabel_8, gbc_lblNewLabel_8);
-
-        JLabel lblNewLabel_9 = new JLabel("auckland university squash club");
-        lblNewLabel_9.setForeground(Color.decode("#0153A5"));
-        lblNewLabel_9.setFont(new Font("Tahoma", Font.PLAIN, 28));
-        GridBagConstraints gbc_lblNewLabel_9 = new GridBagConstraints();
-        gbc_lblNewLabel_9.anchor = GridBagConstraints.WEST;
-        gbc_lblNewLabel_9.gridx = 0;
-        gbc_lblNewLabel_9.gridy = 1;
-        panel_2.add(lblNewLabel_9, gbc_lblNewLabel_9);
+        try {
+            JLabel lblNewLabel_8 = new JLabel(new ImageIcon(ImageIO.read(ClassLoader.getSystemResource("images/banner.png"))));
+            lblNewLabel_8.setFont(new Font("Tahoma", Font.PLAIN, 64));
+            lblNewLabel_8.setForeground(Color.WHITE);
+            GridBagConstraints gbc_lblNewLabel_8 = new GridBagConstraints();
+            gbc_lblNewLabel_8.gridwidth = 2;
+            gbc_lblNewLabel_8.gridheight = 2;
+            gbc_lblNewLabel_8.anchor = GridBagConstraints.NORTHWEST;
+            gbc_lblNewLabel_8.gridx = 0;
+            gbc_lblNewLabel_8.gridy = 0;
+            panel_2.add(lblNewLabel_8, gbc_lblNewLabel_8);
+        }catch (IOException e){}
 
         JPanel panel_5 = new JPanel();
         panel_5.setOpaque(false);
-        panel_5.setBackground(Color.WHITE);
         GridBagConstraints gbc_panel_5 = new GridBagConstraints();
-        gbc_panel_5.insets = new Insets(10, 10, 10, 10);
+        gbc_panel_5.insets = new Insets(24, 24, 24, 24);
         gbc_panel_5.gridheight = 2;
         gbc_panel_5.fill = GridBagConstraints.BOTH;
         gbc_panel_5.gridx = 1;
@@ -205,12 +199,13 @@ public class ClientWindow extends JFrame {
         panel_5.add(challengeButton);
 
         JPanel panel_4 = new JPanel();
-        panel_4.setBackground(Color.WHITE);
+        panel_4.setBackground(Color.decode("#D30000"));
         GridBagConstraints gbc_panel_4 = new GridBagConstraints();
         gbc_panel_4.gridwidth = 2;
+        gbc_panel_4.gridheight = 2;
         gbc_panel_4.fill = GridBagConstraints.BOTH;
         gbc_panel_4.gridx = 0;
-        gbc_panel_4.gridy = 1;
+        gbc_panel_4.gridy = 0;
         panel_2.add(panel_4, gbc_panel_4);
 
         mPanelFrame = new JPanel();
