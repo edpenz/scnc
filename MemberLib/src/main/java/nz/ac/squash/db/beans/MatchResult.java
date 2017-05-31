@@ -1,17 +1,11 @@
 package nz.ac.squash.db.beans;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-
 import nz.ac.squash.db.DB;
 import nz.ac.squash.db.DB.Transaction;
+
+import javax.persistence.*;
+import java.util.*;
+import java.util.function.Function;
 
 @Entity
 @Table(name = "match_result")
@@ -36,22 +30,26 @@ public class MatchResult {
     }
 
     public MatchResult(Member winner, Match match) {
-        this();
-
-        mWinner = winner;
-        mLoser = match.getPlayer1().equals(winner) ? match.getPlayer2() : match
-                .getPlayer1();
-
-        mMatch = match;
+        this(winner, match.getPlayer1().equals(winner) ? match.getPlayer2() : match.getPlayer1(), match, new Date());
     }
 
     public MatchResult(Member winner, Member loser) {
-        this();
+        this(winner, loser, new Date());
+    }
+
+    public MatchResult(Member winner, Member loser, Date atTime) {
+        this(winner, loser, null, atTime);
+    }
+
+    public MatchResult(Member winner, Member loser, Match match, Date atTime) {
+        assert false;
+
+        mDate = atTime;
 
         mWinner = winner;
         mLoser = loser;
 
-        mMatch = null;
+        mMatch = match;
     }
 
     public long getID() {
@@ -88,51 +86,68 @@ public class MatchResult {
 
     @Override
     public String toString() {
-        return mWinner.getNameFormatted() + " beat " + mLoser != null ? mLoser
-                .getNameFormatted() : "noone";
+        return mWinner.getNameFormatted() + " beat " + (mLoser != null ? mLoser.getNameFormatted() : "nobody");
     }
 
-    // Adds a user to the ladder if they have not been already.
-    public static void addToLadder(final Member member) {
-        DB.queueTransaction(new Transaction<Void>() {
+    public static List<MatchResult> listResults() {
+        return DB.executeTransaction(new Transaction<List<MatchResult>>() {
             @Override
             public void run() {
-                // Abort if already on ladder.
-                if (!query(MatchResult.class, "r where mWinner_mID = ?0",
-                        member).isEmpty()) return;
-
-                update(new MatchResult(member, (Member) null));
+                setResult(query(MatchResult.class, "r order by r.mDate asc"));
             }
         });
+    }
+
+    // Creates a pseudo-result for seeding a member on the ladder according to their skill level.
+    public static MatchResult seeding(List<Member> ladder, Map<Member, Float> skills, Member member, Date atTime) {
+        if (ladder.contains(member)) throw new IllegalArgumentException("Member is already on ladder");
+
+        Function<Member, Float> getSkill = (Member key) -> skills.getOrDefault(key, Float.MAX_VALUE);
+
+        Optional<Member> noHigherThan = ladder.stream()
+                .filter(otherMember -> getSkill.apply(otherMember) <= getSkill.apply(member))
+                .reduce((a, b) -> b);
+
+        // Insert just below all higher/equal-skilled members.
+        int insertIndex = noHigherThan.map(otherMember -> ladder.indexOf(otherMember) + 1).orElse(0);
+        Member insertAbove = insertIndex < ladder.size() ? ladder.get(insertIndex) : null;
+
+        return new MatchResult(member, insertAbove, atTime);
     }
 
     public static List<Member> getLadder() {
-        final List<Member> ladder = new ArrayList<Member>();
+        return getLadder(new Date());
+    }
 
-        DB.executeTransaction(new Transaction<Void>() {
+    public static List<Member> getLadder(Date upToTime) {
+        List<MatchResult> results = DB.executeTransaction(new Transaction<List<MatchResult>>() {
             @Override
             public void run() {
-                for (MatchResult result : listAll(MatchResult.class)) {
-                    int winnerPos = ladder.size();
-                    int loserPos = ladder.size();
-
-                    for (int i = 0; i < ladder.size(); ++i) {
-                        if (ladder.get(i).equals(result.getWinner())) {
-                            winnerPos = i;
-                            break;
-                        } else if (ladder.get(i).equals(result.getLoser())) {
-                            loserPos = i;
-                            break;
-                        }
-                    }
-
-                    ladder.remove(result.getWinner());
-                    ladder.add(Math.min(winnerPos, loserPos),
-                            result.getWinner());
-                }
+                setResult(query(MatchResult.class, "r where r.mDate < ?0 order by r.mDate asc", upToTime));
             }
         });
 
+        List<Member> ladder = new ArrayList<>();
+        results.forEach(result -> updateLadder(ladder, result));
+
         return ladder;
+    }
+
+    public static void updateLadder(List<Member> ladder, MatchResult result) {
+        int winnerPos = ladder.size();
+        int loserPos = ladder.size();
+
+        for (int i = 0; i < ladder.size(); ++i) {
+            if (ladder.get(i).equals(result.getWinner())) {
+                winnerPos = i;
+                break;
+            } else if (ladder.get(i).equals(result.getLoser())) {
+                loserPos = i;
+                break;
+            }
+        }
+
+        ladder.remove(result.getWinner());
+        ladder.add(Math.min(winnerPos, loserPos), result.getWinner());
     }
 }

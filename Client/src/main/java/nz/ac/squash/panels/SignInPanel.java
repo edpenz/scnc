@@ -16,6 +16,8 @@ import org.apache.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 public class SignInPanel extends JLayeredPane {
@@ -357,10 +359,15 @@ public class SignInPanel extends JLayeredPane {
             @Override
             public void run() {
                 update(newStatus);
-                MatchResult.addToLadder(newStatus.getMember());
-                Logger.getLogger(SignInPanel.class).info(
-                        "Signed in " +
-                                newStatus.getMember().getNameFormattedLong());
+
+                List<Member> ladder = SessionHelper.current().getLadder();
+                if (!ladder.contains(newStatus.getMember())) {
+                    MatchResult seeding = MatchResult.seeding(ladder, MemberStatus.getSkillMapping(), newStatus.getMember(), new Date());
+                    MatchResult.updateLadder(ladder, seeding);
+                    update(seeding);
+                }
+
+                Logger.getLogger(SignInPanel.class).info("Signed in " + newStatus.getMember().getNameFormattedLong());
             }
         });
 

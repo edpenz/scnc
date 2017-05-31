@@ -4,10 +4,8 @@ import nz.ac.squash.db.DB;
 import nz.ac.squash.util.Utility;
 
 import javax.persistence.*;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "member_statuses")
@@ -150,7 +148,7 @@ public class MemberStatus {
         });
     }
 
-    public static Collection<MemberStatus> getLatestStatus() {
+    public static List<MemberStatus> getLatestStatus() {
         return DB.executeTransaction(() -> {
             String query = "select s from MemberStatus as s "
                     + "where s.mDate = "
@@ -166,5 +164,10 @@ public class MemberStatus {
             List<MemberStatus> statuses = DB.query(MemberStatus.class, query, member);
             return Utility.first(statuses);
         });
+    }
+
+    public static Map<Member, Float> getSkillMapping() {
+        List<MemberStatus> statuses = MemberStatus.getLatestStatus();
+        return statuses.stream().collect(Collectors.toMap(MemberStatus::getMember, MemberStatus::getSkillLevel));
     }
 }
