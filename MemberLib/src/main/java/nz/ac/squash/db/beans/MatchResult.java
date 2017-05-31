@@ -42,8 +42,6 @@ public class MatchResult {
     }
 
     public MatchResult(Member winner, Member loser, Match match, Date atTime) {
-        assert false;
-
         mDate = atTime;
 
         mWinner = winner;
